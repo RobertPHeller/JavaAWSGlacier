@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+    Created By    : Robert Heller
+    Created       : Mon May 18 09:42:34 2015
+    Last Modified : <150518.1657>
+
+    Description	
+    
+    Copyright (C) 2015  Robert Heller D/B/A Deepwoods Software
+			51 Locke Hill Road
+			Wendell, MA 01379-9728
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+ 
+-->
+<project name="JavaAWSGlacier" default="run" basedir=".">
+  <description>
+    Vault XML Database
+  </description>
+  <!-- set global properties for this build -->
+  <property name="src" location="src"/>
+  <property name="build" location="build"/>
+  <property name="dist" location="dist"/>
+  
+  <target name="init">
+    <!-- Create the time stamp -->
+    <tstamp/>
+    <!-- Create the build directory structure used by compile -->
+    <mkdir dir="${build}"/>
+  </target>
+  
+  <path id="aws.java.sdk.classpath">
+    <fileset dir="${basedir}/../assets/aws-java-sdk-1.7.13/third-party" includes="**/*.jar"/>
+    <fileset dir="${basedir}/../assets/aws-java-sdk-1.7.13/lib" includes="**/*.jar"/>
+    <pathelement location="${build}" />
+  </path>
+  
+  <target name="compile" depends="init"
+    description="compile the source " >
+    <!-- Compile the java code from ${src} into ${build} -->
+    <javac srcdir="${src}" destdir="${build}" classpathref="aws.java.sdk.classpath" />
+  </target>
+  
+
+
+
+  <target name="dist" depends="compile"
+    description="generate the distribution" >
+    <!-- Create the distribution directory -->
+    <mkdir dir="${dist}/lib"/>
+    <manifest file="${dist}/lib/MANIFEST.MF">
+      <attribute name="Built-By" value="${user.name}"/>
+      <attribute name="Main-Class" value="com.deepsoft.main"/>
+    </manifest>
+    <!-- Put everything in ${build} into the JavaAWSGlacier-${DSTAMP}.jar file -->
+    
+    <jar manifest="${dist}/lib/MANIFEST.MF" jarfile="${dist}/lib/JavaAWSGlacier-${DSTAMP}.jar" basedir="${build}"/>
+    <chmod file="${dist}/lib/JavaAWSGlacier-${DSTAMP}.jar" perm="+x" />
+  </target>
+  
+  <target name="clean"
+    description="clean up" >
+    <!-- Delete the ${build} and ${dist} directory trees -->
+    <delete dir="${build}"/>
+    <delete dir="${dist}"/>
+  </target>
+  
+  <target name="run" depends="compile"
+    description="run the program ">
+    <java classname="com.deepsoft.main" classpathref="aws.java.sdk.classpath" 
+      fork="true">
+      <arg value="ListVaults" />
+    </java>
+  </target>
+</project>
