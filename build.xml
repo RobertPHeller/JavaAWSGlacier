@@ -2,7 +2,7 @@
 <!--
     Created By    : Robert Heller
     Created       : Mon May 18 09:42:34 2015
-    Last Modified : <150518.2015>
+    Last Modified : <150519.1655>
 
     Description	
     
@@ -86,6 +86,7 @@
     
     <jar manifest="${dist}/lib/MANIFEST.MF" jarfile="${dist}/lib/JavaAWSGlacier-${DSTAMP}.jar" basedir="${build}"/>
     <chmod file="${dist}/lib/JavaAWSGlacier-${DSTAMP}.jar" perm="+x" />
+    <delete file="${dist}/lib/MANIFEST.MF" />
   </target>
   
   <target name="clean"

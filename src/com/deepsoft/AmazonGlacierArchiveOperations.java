@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 19 09:13:42 2015
- *  Last Modified : <150519.1301>
+ *  Last Modified : <150519.1609>
  *
  *  Description	
  *
@@ -94,7 +94,7 @@ public class AmazonGlacierArchiveOperations {
         } else {
             result = UploadArchiveInOnePart(client,vaultName,archiveFile,size,description);
         }
-        System.out.println(result.location+" "+result.sha256treehash+" "+description);
+        System.out.println(result.location+" "+result.sha256treehash+" {"+description+"}");
     }
     private static UploadResult UploadArchiveInOnePart(AmazonGlacierClient client, String vaultName, File archiveFile, long size, String description) throws Exception {
         InputStream is = new FileInputStream(archiveFile);
