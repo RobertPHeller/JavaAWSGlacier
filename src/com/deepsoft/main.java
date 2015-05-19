@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Mon May 18 09:47:03 2015
- *  Last Modified : <150518.1654>
+ *  Last Modified : <150519.1427>
  *
  *  Description	
  *
@@ -43,12 +43,16 @@
 package com.deepsoft;
 
 import java.io.*;
-import com.deepsoft.*;
+import java.util.*;
 import java.security.NoSuchAlgorithmException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.PropertiesCredentials;
 import com.amazonaws.services.glacier.AmazonGlacierClient;
-import java.util.Properties;
+import com.amazonaws.services.glacier.model.ListPartsResult;
+import com.amazonaws.services.glacier.model.ListMultipartUploadsResult;
+import com.amazonaws.services.glacier.model.PartListElement;
+import com.amazonaws.services.glacier.model.UploadListElement;
+import com.deepsoft.*;
 
 
 class main {
@@ -163,30 +167,255 @@ class main {
             } catch (Exception e) {
                 System.err.println("Vault operation failed." + e.getMessage());
             }
+        } else if (command.compareTo("UploadArchive") == 0) {
+            if (args.length < 2) {
+                System.err.println("Missing required vaultName argument");
+                Usage();
+            }
+            String vaultName = args[1];
+            if (args.length < 3) {
+                System.err.println("Missing required archiveFile argument");
+                Usage();
+            }
+            File archiveFile = new File(args[2]);
+            AWSCredentials credentials = null;
+            try {
+                String homedir = System.getProperty("user.home");
+                File credfile = new File(homedir+"/.AwsCredentials");
+                credentials = new PropertiesCredentials(credfile);
+            } catch (IOException ioe) {
+                System.err.println("Failed to get credentials: " + ioe.getMessage());
+                System.exit(-1);
+            }
+        
+            AmazonGlacierClient client = new AmazonGlacierClient(credentials);
+            client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
+            try {
+                AmazonGlacierArchiveOperations.uploadArchive(client,vaultName,
+                          archiveFile);
+            } catch (Exception e) {
+                System.err.println("Archive operation failed." + e.getMessage());
+            }
+        } else if (command.compareTo("ListParts") == 0) {
+            if (args.length < 2) {
+                System.err.println("Missing required vaultName argument");
+                Usage();
+            }
+            String vaultName = args[1];
+            if (args.length < 3) {
+                System.err.println("Missing required uploadId argument");
+                Usage();
+            }
+            String uploadId = args[2];
+            int iopt = 3;
+            String marker = null;
+            String limit  = null;
+            while (iopt < args.length) {
+                if (args[iopt].compareTo("-marker") == 0 && 
+                    (iopt+1) < args.length) {
+                    marker = args[iopt+1];
+                    iopt += 2;
+                } else if (args[iopt].compareTo("-limit") == 0 &&
+                          (iopt+1) < args.length) {
+                    limit = args[iopt+1];
+                    iopt += 2;
+                } else {
+                    System.err.println("Unknown option: "+args[iopt]+", should be either -marker or -limit");
+                    Usage();
+                }
+            }
+            AWSCredentials credentials = null;
+            try {
+                String homedir = System.getProperty("user.home");
+                File credfile = new File(homedir+"/.AwsCredentials");
+                credentials = new PropertiesCredentials(credfile);
+            } catch (IOException ioe) {
+                System.err.println("Failed to get credentials: " + ioe.getMessage());
+                System.exit(-1);
+            }
+        
+            AmazonGlacierClient client = new AmazonGlacierClient(credentials);
+            client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
+            try {
+                ListPartsResult parts = AmazonGlacierArchiveOperations.listParts(client,vaultName,uploadId,marker,limit);
+                System.out.print("ArchiveDescription {"+parts.getArchiveDescription()+"} ");
+                System.out.print("CreationDate "+parts.getCreationDate()+" ");
+                System.out.print("MultipartUploadId "+parts.getMultipartUploadId()+" ");
+                System.out.print("PartSizeInBytes "+parts.getPartSizeInBytes()+" ");
+                System.out.print("VaultARN "+parts.getVaultARN()+" ");
+                java.util.List<PartListElement> partlist = parts.getParts();
+                if (partlist == null) {
+                    System.out.println("Parts {}");
+                } else {
+                    System.out.print("Parts {");
+                    Iterator itr = partlist.iterator();
+                    String sp0 = "";
+                    while (itr.hasNext()) {
+                        PartListElement part = (PartListElement)itr.next();
+                        String range = part.getRangeInBytes();
+                        String treeHash = part.getSHA256TreeHash();
+                        System.out.print(sp0+"{");
+                        String sp = "";
+                        if (range != null) {
+                            System.out.print("RangeInBytes "+range);
+                            sp = " ";
+                        }
+                        if (treeHash != null) {
+                            System.out.print(sp+"SHA256TreeHash "+treeHash);
+                        }
+                        System.out.print("}");
+                        sp0 = " ";
+                    }
+                    System.err.println("}");
+                }
+            } catch (Exception e) {
+                System.err.println("Archive operation failed." + e.getMessage());
+            }
+        } else if (command.compareTo("ListMultipartUploads") == 0) {
+            if (args.length < 2) {
+                System.err.println("Missing required vaultName argument");
+                Usage();
+            }
+            String vaultName = args[1];
+            int iopt = 2;
+            String marker = null;
+            String limit  = null;
+            while (iopt < args.length) {
+                if (args[iopt].compareTo("-marker") == 0 && 
+                    (iopt+1) < args.length) {
+                    marker = args[iopt+1];
+                    iopt += 2;
+                } else if (args[iopt].compareTo("-limit") == 0 &&
+                          (iopt+1) < args.length) {
+                    limit = args[iopt+1];
+                    iopt += 2;
+                } else {
+                    System.err.println("Unknown option: "+args[iopt]+", should be either -marker or -limit");
+                    Usage();
+                }
+            }
+            AWSCredentials credentials = null;
+            try {
+                String homedir = System.getProperty("user.home");
+                File credfile = new File(homedir+"/.AwsCredentials");
+                credentials = new PropertiesCredentials(credfile);
+            } catch (IOException ioe) {
+                System.err.println("Failed to get credentials: " + ioe.getMessage());
+                System.exit(-1);
+            }
+        
+            AmazonGlacierClient client = new AmazonGlacierClient(credentials);
+            client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
+            try {
+                ListMultipartUploadsResult uploads = AmazonGlacierArchiveOperations.listMultipartUploads(client,vaultName,marker,limit);
+                java.util.List<UploadListElement> uploadsList = uploads.getUploadsList();
+                if (uploadsList == null) {
+                    System.out.println("{}");
+                } else {
+                    String sp0 = "";
+                    Iterator itr = uploadsList.iterator();
+                    while (itr.hasNext()) {
+                        UploadListElement upload = (UploadListElement)itr.next();
+                        System.out.print(sp0+"{");
+                        String sp = "";
+                        String uploadId = upload.getMultipartUploadId();
+                        String vaultARN = upload.getVaultARN();
+                        String archiveDescription = upload.getArchiveDescription();
+                        Long partSizeInBytes = upload.getPartSizeInBytes();
+                        String creationDate = upload.getCreationDate();
+                        if (uploadId != null) {
+                            System.out.print("MultipartUploadId "+uploadId);
+                            sp = " ";
+                        }
+                        if (vaultARN != null) {
+                            System.out.print(sp+"VaultARN "+vaultARN);
+                            sp = " ";
+                        }
+                        if (archiveDescription != null) {
+                            System.out.print(sp+"ArchiveDescription {"+archiveDescription+"}");
+                            sp = " ";
+                        }
+                        if (partSizeInBytes != 0) {
+                            System.out.print(sp+"PartSizeInBytes "+partSizeInBytes);
+                            sp = " ";
+                        }
+                        if (creationDate != null) {
+                            System.out.print(sp+"CreationDate "+creationDate);
+                        }
+                        System.out.print("}");
+                        sp0 = " ";
+                    }
+                    System.out.println("");
+                }
+            } catch (Exception e) {
+                System.err.println("Archive operation failed." + e.getMessage());
+            }
+        } else if (command.compareTo("AbortMultipartUpload") == 0) {
+            if (args.length < 2) {
+                System.err.println("Missing required vaultName argument");
+                Usage();
+            }
+            String vaultName = args[1];
+            if (args.length < 3) {
+                System.err.println("Missing required uploadId argument");
+                Usage();
+            }
+            String uploadId = args[2];
+            AWSCredentials credentials = null;
+            try {
+                String homedir = System.getProperty("user.home");
+                File credfile = new File(homedir+"/.AwsCredentials");
+                credentials = new PropertiesCredentials(credfile);
+            } catch (IOException ioe) {
+                System.err.println("Failed to get credentials: " + ioe.getMessage());
+                System.exit(-1);
+            }
+        
+            AmazonGlacierClient client = new AmazonGlacierClient(credentials);
+            client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
+            try {
+                AmazonGlacierArchiveOperations.abortMultipartUpload(client,vaultName,uploadId);
+                System.out.println(vaultName+" "+uploadId);
+            } catch (Exception e) {
+                System.err.println("Failed to abort Multipart Upload "+vaultName+"/"+uploadId+": "+e.getMessage());
+            }
+        } else if (command.compareTo("DeleteArchive") == 0) {
+            if (args.length < 2) {
+                System.err.println("Missing required vaultName argument");
+                Usage();
+            }
+            String vaultName = args[1];
+            if (args.length < 3) {
+                System.err.println("Missing required archiveId argument");
+                Usage();
+            }
+            String archiveId = args[2];
+            AWSCredentials credentials = null;
+            try {
+                String homedir = System.getProperty("user.home");
+                File credfile = new File(homedir+"/.AwsCredentials");
+                credentials = new PropertiesCredentials(credfile);
+            } catch (IOException ioe) {
+                System.err.println("Failed to get credentials: " + ioe.getMessage());
+                System.exit(-1);
+            }
+        
+            AmazonGlacierClient client = new AmazonGlacierClient(credentials);
+            client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
+            try {
+                AmazonGlacierArchiveOperations.deleteArchive(client,vaultName,archiveId);
+                System.out.println(vaultName+" "+archiveId);
+            } catch (Exception e) {
+                System.err.println("Failed to delete archive "+vaultName+"/"+archiveId+": "+e.getMessage());
+            }
+        } else if (command.compareTo("InitiateJob") == 0) {
+        } else if (command.compareTo("ListJobs") == 0) {
+        } else if (command.compareTo("DescribeJob") == 0) {
+        } else if (command.compareTo("GetJobOutput") == 0) {
         } else {
             System.err.println("Missing required command");
             Usage();
         }
-        
-        /**
-         * set response [$glacierClient createVault $vaultname]
-         * set response [$glacierClient deleteVault $vault]
-         * 
-         * set r1 [$glacierClient initiateMultipartUpload  $vaultname $Meg256 $description]
-         * set partresponse [$glacierClient uploadMultipartPart $vaultname $uploadid $uploadpartfile $range]
-         * set response [$glacierClient completeMultipartUpload $vaultname $uploadid $size $sha256_tree_hash]
-         * set response [$glacierClient uploadArchive $vaultname $archivefile $description]
-         * set response [eval [list $glacierClient listParts $vault $uploadid] $args]
-         * set response [eval [list $glacierClient listMultipartUploads $vault] $args]
-         * set response [$glacierClient abortMultipartUpload $vault $uploadid]
-         * set response [$glacierClient deleteArchive $vault [$anode attribute archiveid]]
-         * 
-         * set response [$glacierClient initiateJob $vault archive-retrieval -archiveid [$anode attribute archiveid] -snstopic $snstopic]
-         * set response [eval [list $glacierClient listJobs $vault] $args]
-         * set response [$glacierClient describeJob $vault $jobid]
-         * set response [$glacierClient getJobOutput $vault $jobid -output $filename]
-         */
-        
     }
     static public void Usage() {
         System.err.println("JavaAWSGlacier.jar command [args...]");
@@ -203,7 +432,7 @@ class main {
         //System.err.println(" InitiateMultipartUpload vaultname partsize description");
         //System.err.println(" UploadMultipartPart vaultname uploadid uploadpartfile range");
         //System.err.println(" CompleteMultipartUpload vaultname uploadid size sha256_tree_hash");
-        System.err.println(" UploadArchive vaultname archivefile description");
+        System.err.println(" UploadArchive vaultname archivefile");
         System.err.println(" ListParts vaultname uploadid opts...");
         System.err.println(" ListMultipartUploads vaultname opts...");
         System.err.println(" AbortMultipartUpload vaultname uploadid");
