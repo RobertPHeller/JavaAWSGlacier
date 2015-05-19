@@ -2,7 +2,7 @@
 <!--
     Created By    : Robert Heller
     Created       : Mon May 18 09:42:34 2015
-    Last Modified : <150518.1657>
+    Last Modified : <150518.2015>
 
     Description	
     
@@ -26,7 +26,7 @@
 
  
 -->
-<project name="JavaAWSGlacier" default="run" basedir=".">
+<project name="JavaAWSGlacier" default="dist" basedir=".">
   <description>
     Vault XML Database
   </description>
@@ -40,6 +40,23 @@
     <tstamp/>
     <!-- Create the build directory structure used by compile -->
     <mkdir dir="${build}"/>
+    <unjar src="/dvdisos/aws-java-sdk-1.7.13/lib/aws-java-sdk-1.7.13.jar"
+      dest="${build}"/>
+    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/commons-logging-1.1.1/commons-logging-1.1.1.jar" 
+      dest="${build}"/>
+    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/httpcomponents-client-4.2.3/httpclient-4.2.3.jar" 
+      dest="${build}"/>
+    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/httpcomponents-client-4.2.3/httpcore-4.2.jar" 
+      dest="${build}"/>
+    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/jackson-core-2.1/jackson-core-2.1.1.jar"
+      dest="${build}"/>
+    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/jackson-annotations-2.1/jackson-annotations-2.1.1.jar"
+      dest="${build}"/>
+    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/jackson-databind-2.1/jackson-databind-2.1.1.jar" 
+      dest="${build}"/>
+    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/joda-time-2.2/joda-time-2.2.jar" 
+      dest="${build}"/>
+    <delete dir="${build}/META-INF" />
   </target>
   
   <path id="aws.java.sdk.classpath">
@@ -78,11 +95,4 @@
     <delete dir="${dist}"/>
   </target>
   
-  <target name="run" depends="compile"
-    description="run the program ">
-    <java classname="com.deepsoft.main" classpathref="aws.java.sdk.classpath" 
-      fork="true">
-      <arg value="ListVaults" />
-    </java>
-  </target>
 </project>
