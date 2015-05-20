@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Wed Jul 30 15:32:49 2014
-#  Last Modified : <150519.1645>
+#  Last Modified : <150520.1109>
 #
 #  Description	
 #
@@ -45,6 +45,7 @@ snit::type BackupVault {
     }
     method run_java_GlacierClient {args} {
         set cmd "|$javacmd $args"
+        #puts stderr "*** $self run_java_GlacierClient: cmd = '$cmd'"
         set pipe [open $cmd r]
         set result [read $pipe]
         close $pipe
@@ -113,7 +114,7 @@ snit::type BackupVault {
         if {$vnode eq {}} {
             error "No such vault: $vault"
         }
-        if {[catch {eval [list $self run_java_GlacierClient ListMultiPartUploads $vault] $args} result]} {
+        if {[catch {eval [list $self run_java_GlacierClient ListMultipartUploads $vault] $args} result]} {
             puts stderr "Failed to list multipart uploads for $vault $uploadid: $result"
             return {}
         }
