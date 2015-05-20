@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Tue May 19 15:17:37 2015
-#  Last Modified : <150519.1654>
+#  Last Modified : <150520.1017>
 #
 #  Description	
 #
@@ -42,6 +42,9 @@
 
 
 if {$::starkit::mode eq "sourced"} {
+    if {$::tcl_platform(wordSize) == 8} {
+        starkit::autoextend [file join $starkit::topdir lib64]
+    }
     starkit::autoextend [file join $starkit::topdir lib] 
     global AWS_GlacierClient_JAVA
     set AWS_GlacierClient_JAVA [glob \
