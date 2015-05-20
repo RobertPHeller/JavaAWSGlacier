@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Wed Jul 30 15:32:49 2014
-#  Last Modified : <150520.1109>
+#  Last Modified : <150520.1331>
 #
 #  Description	
 #
@@ -115,7 +115,7 @@ snit::type BackupVault {
             error "No such vault: $vault"
         }
         if {[catch {eval [list $self run_java_GlacierClient ListMultipartUploads $vault] $args} result]} {
-            puts stderr "Failed to list multipart uploads for $vault $uploadid: $result"
+            puts stderr "Failed to list multipart uploads for $vault: $result"
             return {}
         }
         return $result
