@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Wed Jul 30 15:32:49 2014
-#  Last Modified : <150520.1331>
+#  Last Modified : <150521.1301>
 #
 #  Description	
 #
@@ -86,12 +86,13 @@ snit::type BackupVault {
     }
     method UploadArchive {vaultname archivefile} {
         #puts stderr "*** $self UploadArchive $vaultname $archivefile"
-        if {[catch {$self run_java_GlacierClient UploadArchive vaultname archivefile} result]} {
+        if {[catch {$self run_java_GlacierClient UploadArchive $vaultname $archivefile} result]} {
             puts stderr "Failed to upload archive to vault: $vaultname $archivefile: $result"
             return {}
         }
         foreach {loc sha256treehash description} $result {break}
         set date [clock format [clock scan now] -format $timeFormatter -gmt yes]
+        set size [file size $archivefile]
         #puts stderr "*** $self UploadArchive: sha256treehash is $sha256treehash"
         puts stdout "Archive ($description, $size) uploaded on $date to $loc"
         return [$glacierVaultDB addarchive $loc $date $size $sha256treehash $description]

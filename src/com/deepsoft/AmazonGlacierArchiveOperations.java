@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 19 09:13:42 2015
- *  Last Modified : <150519.1609>
+ *  Last Modified : <150521.0812>
  *
  *  Description	
  *
@@ -86,8 +86,11 @@ public class AmazonGlacierArchiveOperations {
         }
     }
     public static void uploadArchive(AmazonGlacierClient client, String vaultName, File archiveFile) throws Exception {
+        //System.err.println("*** AmazonGlacierArchiveOperations.uploadArchive(client,"+vaultName+","+archiveFile+")");
         String description = archiveFile.getName();
+        //System.err.println("*** AmazonGlacierArchiveOperations.uploadArchive(): description = "+description);
         long size = archiveFile.length();
+        //System.err.println("*** AmazonGlacierArchiveOperations.uploadArchive(): size = "+size);
         UploadResult result;
         if (size > MEG256) {
             result = UploadMultiPartArchive(client,vaultName,archiveFile,size,description);
@@ -106,7 +109,7 @@ public class AmazonGlacierArchiveOperations {
               .withChecksum(TreeHashGenerator.calculateTreeHash(archiveFile))
               .withBody(new ByteArrayInputStream(body))
               .withContentLength((long)body.length);
-        
+        //System.err.println("*** AmazonGlacierArchiveOperations.UploadArchiveInOnePart(): request = "+request);
         UploadArchiveResult uploadArchiveResult = client.uploadArchive(request);
         return new UploadResult(uploadArchiveResult.getLocation(), uploadArchiveResult.getChecksum());
     }
@@ -129,6 +132,7 @@ public class AmazonGlacierArchiveOperations {
               .withArchiveDescription(description)
               .withPartSize(String.valueOf(MEG256));
         
+        //System.err.println("*** AmazonGlacierArchiveOperations.initiateMultipartUpload(): request = "+request);
         InitiateMultipartUploadResult result = client.initiateMultipartUpload(request);
         
         return result.getUploadId();
@@ -165,6 +169,7 @@ public class AmazonGlacierArchiveOperations {
                   .withRange(contentRange)
                   .withUploadId(uploadId);
             
+            //System.err.println("*** AmazonGlacierArchiveOperations.uploadParts(): partRequest = "+partRequest);
             UploadMultipartPartResult partResult = client.uploadMultipartPart(partRequest);
             
             currentPosition = currentPosition + read;
@@ -182,6 +187,7 @@ public class AmazonGlacierArchiveOperations {
               .withChecksum(checksum)
               .withArchiveSize(String.valueOf(archiveFile.length()));
     
+        //System.err.println("*** AmazonGlacierArchiveOperations.CompleteMultiPartUpload(): compRequest = "+compRequest);
         CompleteMultipartUploadResult compResult = client.completeMultipartUpload(compRequest);
     
         return compResult.getLocation();
