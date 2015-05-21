@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Mon May 18 09:47:03 2015
- *  Last Modified : <150519.1427>
+ *  Last Modified : <150521.1648>
  *
  *  Description	
  *
@@ -52,6 +52,13 @@ import com.amazonaws.services.glacier.model.ListPartsResult;
 import com.amazonaws.services.glacier.model.ListMultipartUploadsResult;
 import com.amazonaws.services.glacier.model.PartListElement;
 import com.amazonaws.services.glacier.model.UploadListElement;
+import com.amazonaws.services.glacier.model.JobParameters;
+import com.amazonaws.services.glacier.model.InventoryRetrievalJobInput;
+import com.amazonaws.services.glacier.model.InitiateJobResult;
+import com.amazonaws.services.glacier.model.ListJobsRequest;
+import com.amazonaws.services.glacier.model.ListJobsResult;
+import com.amazonaws.services.glacier.model.GlacierJobDescription;
+
 import com.deepsoft.*;
 
 
@@ -409,9 +416,196 @@ class main {
                 System.err.println("Failed to delete archive "+vaultName+"/"+archiveId+": "+e.getMessage());
             }
         } else if (command.compareTo("InitiateJob") == 0) {
+            if (args.length < 2) {
+                System.err.println("Missing required vaultName argument");
+                Usage();
+            }
+            String vaultName = args[1];
+            if (args.length < 3) {
+                System.err.println("Missing required jobtype argument");
+                Usage();
+            }
+            String jobtype = args[2];
+            String job = vaultName+" "+jobtype;
+            JobParameters jobParams = new JobParameters().withType(jobtype);
+            InventoryRetrievalJobInput inventoryParams = null;
+            int iopt = 3;
+            if (jobtype.compareTo("archive-retrieval") == 0) {
+                if (args.length < (iopt+1)) {
+                    System.err.println("Missing required archiveId argument");
+                    Usage();
+                }
+                job += " "+args[iopt];
+                jobParams.setArchiveId(args[iopt++]);
+            } else if (jobtype.compareTo("inventory-retrieval") == 0) {
+            } else {
+                System.err.println("Undefined job type: "+jobtype);
+                Usage();
+            }
+            
+            while (iopt < args.length) {
+                if (iopt+1 < args.length) {
+                    job += " "+args[iopt]+" "+args[iopt+1];
+                }
+                if (args[iopt].compareTo("-startdate") == 0 &&
+                    (iopt+1) < args.length &&
+                    jobtype.compareTo("inventory-retrieval") == 0) {
+                    if (inventoryParams == null) {
+                        inventoryParams = new InventoryRetrievalJobInput();
+                    }
+                    
+                    inventoryParams.setStartDate(args[iopt+1]);
+                    iopt += 2;
+                } else if (args[iopt].compareTo("-enddate") == 0 &&
+                          (iopt+1) < args.length &&
+                          jobtype.compareTo("inventory-retrieval") == 0) {
+                    if (inventoryParams == null) {
+                        inventoryParams = new InventoryRetrievalJobInput();
+                    }
+                    inventoryParams.setEndDate(args[iopt+1]);
+                    iopt += 2;
+                } else if (args[iopt].compareTo("-marker") == 0 &&
+                          (iopt+1) < args.length &&
+                          jobtype.compareTo("inventory-retrieval") == 0) {
+                    if (inventoryParams == null) {
+                        inventoryParams = new InventoryRetrievalJobInput();
+                    }
+                    inventoryParams.setMarker(args[iopt+1]);
+                    iopt += 2;
+                } else if (args[iopt].compareTo("-limit") == 0 &&
+                          (iopt+1) < args.length &&
+                          jobtype.compareTo("inventory-retrieval") == 0) {
+                    if (inventoryParams == null) {
+                        inventoryParams = new InventoryRetrievalJobInput();
+                    }
+                    inventoryParams.setLimit(args[iopt+1]);
+                    iopt += 2;
+                } else if (args[iopt].compareTo("-format") == 0 &&
+                          (iopt+1) < args.length &&
+                          jobtype.compareTo("inventory-retrieval") == 0) {
+                    jobParams.setFormat(args[iopt+1]);
+                    iopt += 2;
+                } else if (args[iopt].compareTo("-description") == 0 &&
+                          (iopt+1) < args.length) {
+                    jobParams.setDescription(args[iopt+1]);
+                    iopt += 2;
+                } else if (args[iopt].compareTo("-snstopic") == 0 &&
+                          (iopt+1) < args.length) {
+                    jobParams.setSNSTopic(args[iopt+1]);
+                    iopt += 2;
+                } else {
+                    System.err.println("Unknown option: "+args[iopt]+", should be one of -startdate, -enddate, -marker, -limit, -format, -description, or -snstopic");
+                    Usage();
+                }
+            }
+            if (inventoryParams != null) {
+                jobParams.setInventoryRetrievalParameters(inventoryParams);
+            }
+            AWSCredentials credentials = null;
+            try {
+                String homedir = System.getProperty("user.home");
+                File credfile = new File(homedir+"/.AwsCredentials");
+                credentials = new PropertiesCredentials(credfile);
+            } catch (IOException ioe) {
+                System.err.println("Failed to get credentials: " + ioe.getMessage());
+                System.exit(-1);
+            }
+        
+            AmazonGlacierClient client = new AmazonGlacierClient(credentials);
+            client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
+            try {
+                InitiateJobResult jResult = AmazonGlacierJobOperations.initiateJob(client,vaultName,jobParams);
+                System.out.println(jResult.getJobId());
+            } catch (Exception e) {
+                System.err.println("Failed to initiate job "+job+": "+e.getMessage());
+            }
         } else if (command.compareTo("ListJobs") == 0) {
+            if (args.length < 2) {
+                System.err.println("Missing required vaultName argument");
+                Usage();
+            }
+            String vaultName = args[1];
+            ListJobsRequest ljRequest = new ListJobsRequest().
+                  withVaultName(vaultName);
+            int iopt = 2;
+            String job = vaultName;
+            while (iopt < args.length) {
+                if (iopt+1 < args.length) {
+                    job += " "+args[iopt]+" "+args[iopt+1];
+                }
+                if (args[iopt].compareTo("-completed") == 0 &&
+                    (iopt+1) < args.length) {
+                    boolean completed;
+                    try {
+                        completed = StringToBoolean(args[iopt+1]);
+                    } catch (IllegalArgumentException iae) {
+                        System.err.println("Bad value for -completed: "+iae.getMessage());
+                        Usage();
+                    }
+                    if (completed) {
+                        ljRequest.setCompleted("true");
+                    } else {
+                        ljRequest.setCompleted("false");
+                    }
+                } else if (args[iopt].compareTo("-limit") == 0 &&
+                          (iopt+1) < args.length) {
+                    ljRequest.setLimit(args[iopt+1]);
+                } else if (args[iopt].compareTo("-marker") == 0 &&
+                          (iopt+1) < args.length) {
+                    ljRequest.setMarker(args[iopt+1]);
+                } else if (args[iopt].compareTo("-statuscode") == 0 &&
+                          (iopt+1) < args.length) {
+                    ljRequest.setStatuscode(args[iopt+1]);
+                } else {
+                    System.err.println("Unknown option: "+args[iopt]+", should be one of  -completed, -limit, -marker, or -statuscode");
+                    Usage();
+                }
+                iopt += 2;
+            }
+            AWSCredentials credentials = null;
+            try {
+                String homedir = System.getProperty("user.home");
+                File credfile = new File(homedir+"/.AwsCredentials");
+                credentials = new PropertiesCredentials(credfile);
+            } catch (IOException ioe) {
+                System.err.println("Failed to get credentials: " + ioe.getMessage());
+                System.exit(-1);
+            }
+        
+            AmazonGlacierClient client = new AmazonGlacierClient(credentials);
+            client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
+            try {
+                ListJobResult ljResult = AmazonGlacierJobOperations.listJobs(client,vaultName,ljRequest);
+                java.util.List<GlacierJobDescription> jobList = ljResult.getJobList();
+                if (jobList == null) {
+                    System.out.println("{}");
+                } else {
+                    String sp0 = "";
+                    Iterator itr = jobList.iterator();
+                    while (itr.hasNext()) {
+                        GlacierJobDescription job = (GlacierJobDescription)itr.next();
+                        System.out.print(sp0+"{");
+                        // *** One job's descr as an assoc list
+                        System.out.print("}");
+                        sp0 = " ";
+                    }
+                    System.out.println("");
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to list jobs "+job+": "+e.getMessage());
+            }
         } else if (command.compareTo("DescribeJob") == 0) {
+            if (args.length < 2) {
+                System.err.println("Missing required vaultName argument");
+                Usage();
+            }
+            String vaultName = args[1];
         } else if (command.compareTo("GetJobOutput") == 0) {
+            if (args.length < 2) {
+                System.err.println("Missing required vaultName argument");
+                Usage();
+            }
+            String vaultName = args[1];
         } else {
             System.err.println("Missing required command");
             Usage();
@@ -438,11 +632,29 @@ class main {
         System.err.println(" AbortMultipartUpload vaultname uploadid");
         System.err.println(" DeleteArchive vaultname archiveid");
         System.err.println("");
-        System.err.println(" InitiateJob vaultname archive-retrieval archiveid snstopic");
+        System.err.println(" InitiateJob vaultname jobtype jobparameters...");
         System.err.println(" ListJobs vaultname opts...");
         System.err.println(" DescribeJob vaultname jobid");
         System.err.println(" GetJobOutput vaultname jobid [-output filename]");
         System.exit(-1);
     }
+    private boolean StringToBoolean(String boolstring) throws IllegalArgumentException {
+        if (boolstring.compareTo("true") == 0) {
+            return true;
+        } else if (boolstring.compareTo("false") == 0) {
+            return false;
+        } else if (boolstring.compareTo("yes") == 0) {
+            return true;
+        } else if (boolstring.compareTo("no") == 0) {
+            return false;
+        } else if (boolstring.compareTo("1") == 0) {
+            return true;
+        } else if (boolstring.compareTo("0") == 0) {
+            return false;
+        } else {
+            throw new IllegalArgumentException("Expected true/false/yes/no/1/0, got "+boolstring);
+        }
+    }
+                
 }
 

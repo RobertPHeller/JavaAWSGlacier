@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Wed Jul 30 15:32:49 2014
-#  Last Modified : <150521.1301>
+#  Last Modified : <150521.1501>
 #
 #  Description	
 #
@@ -146,15 +146,11 @@ snit::type BackupVault {
         #puts stderr "set response \[$glacierClient initiateJob $vault archive-retrieval \
         #                            -archiveid [$anode attribute archiveid] \
         #                            -snstopic $snstopic\]"
-        error "Not Implemented yet!"
-        set response [$glacierClient initiateJob $vault archive-retrieval -archiveid [$anode attribute archiveid] -snstopic $snstopic]
-        if {([$response getNcode] / 100) != 2} {
-            puts stderr "Failed to initiate job: [$response getCode]"
-            $response print stderr
+        if {[catch {$self run_java_GlacierClient InitiateJob $vault archive-retrieval [$anode attribute archiveid] -snstopic $snstopic} result]} {
+            puts stderr "Failed to initiate job: $result"
             return {}
         } else {
-            set jobid    [$response getResponseMetadataHeader x-amz-job-id]
-            return $jobid
+            return $result
         }
     }
     method GetJobList {vault args} {
