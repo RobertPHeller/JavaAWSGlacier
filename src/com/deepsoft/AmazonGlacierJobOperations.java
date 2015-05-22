@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Thu May 21 15:02:55 2015
- *  Last Modified : <150521.1532>
+ *  Last Modified : <150521.1956>
  *
  *  Description	
  *
@@ -52,7 +52,12 @@ import com.amazonaws.services.glacier.model.InitiateJobRequest;
 import com.amazonaws.services.glacier.model.InitiateJobResult;
 import com.amazonaws.services.glacier.model.JobParameters;
 import com.amazonaws.services.glacier.model.InventoryRetrievalJobInput;
-
+import com.amazonaws.services.glacier.model.ListJobsResult;
+import com.amazonaws.services.glacier.model.ListJobsRequest;
+import com.amazonaws.services.glacier.model.GetJobOutputRequest;
+import com.amazonaws.services.glacier.model.GetJobOutputResult;
+import com.amazonaws.services.glacier.model.DescribeJobRequest;
+import com.amazonaws.services.glacier.model.DescribeJobResult;
 
 public class AmazonGlacierJobOperations {
     public static InitiateJobResult initiateJob(AmazonGlacierClient client,String vaultName,JobParameters jobParams) throws Exception {
@@ -60,6 +65,15 @@ public class AmazonGlacierJobOperations {
               .withVaultName(vaultName)
               .withJobParameters(jobParams);
         return client.initiateJob(request);
+    }
+    public static ListJobsResult listJobs(AmazonGlacierClient client,String vaultName,ListJobsRequest request) throws Exception {
+        return client.listJobs(request);
+    }
+    public static DescribeJobResult describeJob(AmazonGlacierClient client,String vaultName, String jobId) throws Exception {
+        DescribeJobRequest request = new DescribeJobRequest()
+              .withVaultName(vaultName)
+              .withJobId(jobId);
+        return client.describeJob(request);
     }
 }
 

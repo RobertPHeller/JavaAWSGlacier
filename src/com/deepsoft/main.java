@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Mon May 18 09:47:03 2015
- *  Last Modified : <150521.1648>
+ *  Last Modified : <150521.2002>
  *
  *  Description	
  *
@@ -58,7 +58,10 @@ import com.amazonaws.services.glacier.model.InitiateJobResult;
 import com.amazonaws.services.glacier.model.ListJobsRequest;
 import com.amazonaws.services.glacier.model.ListJobsResult;
 import com.amazonaws.services.glacier.model.GlacierJobDescription;
-
+import com.amazonaws.services.glacier.model.InventoryRetrievalJobDescription;
+import com.amazonaws.services.glacier.model.GetJobOutputRequest;
+import com.amazonaws.services.glacier.model.GetJobOutputResult;
+import com.amazonaws.services.glacier.model.DescribeJobResult;
 import com.deepsoft.*;
 
 
@@ -426,7 +429,7 @@ class main {
                 Usage();
             }
             String jobtype = args[2];
-            String job = vaultName+" "+jobtype;
+            String jobstring = vaultName+" "+jobtype;
             JobParameters jobParams = new JobParameters().withType(jobtype);
             InventoryRetrievalJobInput inventoryParams = null;
             int iopt = 3;
@@ -435,7 +438,7 @@ class main {
                     System.err.println("Missing required archiveId argument");
                     Usage();
                 }
-                job += " "+args[iopt];
+                jobstring += " "+args[iopt];
                 jobParams.setArchiveId(args[iopt++]);
             } else if (jobtype.compareTo("inventory-retrieval") == 0) {
             } else {
@@ -445,7 +448,7 @@ class main {
             
             while (iopt < args.length) {
                 if (iopt+1 < args.length) {
-                    job += " "+args[iopt]+" "+args[iopt+1];
+                    jobstring += " "+args[iopt]+" "+args[iopt+1];
                 }
                 if (args[iopt].compareTo("-startdate") == 0 &&
                     (iopt+1) < args.length &&
@@ -517,7 +520,7 @@ class main {
                 InitiateJobResult jResult = AmazonGlacierJobOperations.initiateJob(client,vaultName,jobParams);
                 System.out.println(jResult.getJobId());
             } catch (Exception e) {
-                System.err.println("Failed to initiate job "+job+": "+e.getMessage());
+                System.err.println("Failed to initiate job "+jobstring+": "+e.getMessage());
             }
         } else if (command.compareTo("ListJobs") == 0) {
             if (args.length < 2) {
@@ -528,14 +531,14 @@ class main {
             ListJobsRequest ljRequest = new ListJobsRequest().
                   withVaultName(vaultName);
             int iopt = 2;
-            String job = vaultName;
+            String jobstring = vaultName;
             while (iopt < args.length) {
                 if (iopt+1 < args.length) {
-                    job += " "+args[iopt]+" "+args[iopt+1];
+                    jobstring += " "+args[iopt]+" "+args[iopt+1];
                 }
                 if (args[iopt].compareTo("-completed") == 0 &&
                     (iopt+1) < args.length) {
-                    boolean completed;
+                    boolean completed = false;
                     try {
                         completed = StringToBoolean(args[iopt+1]);
                     } catch (IllegalArgumentException iae) {
@@ -575,7 +578,7 @@ class main {
             AmazonGlacierClient client = new AmazonGlacierClient(credentials);
             client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
             try {
-                ListJobResult ljResult = AmazonGlacierJobOperations.listJobs(client,vaultName,ljRequest);
+                ListJobsResult ljResult = AmazonGlacierJobOperations.listJobs(client,vaultName,ljRequest);
                 java.util.List<GlacierJobDescription> jobList = ljResult.getJobList();
                 if (jobList == null) {
                     System.out.println("{}");
@@ -585,14 +588,118 @@ class main {
                     while (itr.hasNext()) {
                         GlacierJobDescription job = (GlacierJobDescription)itr.next();
                         System.out.print(sp0+"{");
-                        // *** One job's descr as an assoc list
+                        String sp = "";
+                        String jobId = job.getJobId();
+                        String jobDescription = job.getJobDescription();
+                        String action = job.getAction();
+                        String archiveId = job.getArchiveId();
+                        String vaultARN = job.getVaultARN();
+                        String creationDate = job.getCreationDate();
+                        Boolean completed = job.getCompleted();
+                        String statusCode = job.getStatusCode();
+                        String statusMessage = job.getStatusMessage();
+                        Long archiveSizeInBytes = job.getArchiveSizeInBytes();
+                        Long inventorySizeInBytes = job.getInventorySizeInBytes();
+                        String sNSTopic = job.getSNSTopic();
+                        String completionDate = job.getCompletionDate();
+                        String sHA256TreeHash = job.getSHA256TreeHash();
+                        String archiveSHA256TreeHash = job.getArchiveSHA256TreeHash();
+                        String retrievalByteRange = job.getRetrievalByteRange();
+                        InventoryRetrievalJobDescription inventoryRetrievalParameters = job.getInventoryRetrievalParameters();
+                        if (jobId != null) {
+                            System.out.print("JobId "+jobId);
+                            sp = " ";
+                        }
+                        if (jobDescription != null) {
+                            System.out.print(sp+"JobDescription "+jobDescription);
+                            sp = " ";
+                        }
+                        if (action != null) {
+                            System.out.print(sp+"Action "+action);
+                            sp = " ";
+                        }
+                        if (archiveId != null) {
+                            System.out.print(sp+"ArchiveId "+archiveId);
+                            sp = " ";
+                        }
+                        if (vaultARN != null) {
+                            System.out.print(sp+"VaultARN "+vaultARN);
+                            sp = " ";
+                        }
+                        if (creationDate != null) {
+                            System.out.print(sp+"CreationDate "+creationDate);
+                            sp = " ";
+                        }
+                        System.out.print(sp+"Completed = "+completed);
+                        sp = " ";
+                        if (statusCode != null) {
+                            System.out.print(sp+"StatusCode "+statusCode);
+                            sp = " ";
+                        }
+                        if (statusMessage != null) {
+                            System.out.print(sp+"StatusMessage "+statusMessage);
+                            sp = " ";
+                        }
+                        System.out.print(sp+"ArchiveSizeInBytes "+archiveSizeInBytes);
+                        sp = " ";
+                        System.out.print(sp+"InventorySizeInBytes "+inventorySizeInBytes);
+                        sp = " ";
+                        if (sNSTopic != null) {
+                            System.out.print(sp+"SNSTopic "+sNSTopic);
+                            sp = " ";
+                        }
+                        if (completionDate != null) {
+                            System.out.print(sp+"CompletionDate "+completionDate);
+                            sp = " ";
+                        }
+                        if (sHA256TreeHash != null) {
+                            System.out.print(sp+"SHA256TreeHash "+sHA256TreeHash);
+                            sp = " ";
+                        }
+                        if (archiveSHA256TreeHash != null) {
+                            System.out.print(sp+"ArchiveSHA256TreeHash "+archiveSHA256TreeHash);
+                            sp = " ";
+                        }
+                        if (retrievalByteRange != null) {
+                            System.out.print(sp+"RetrievalByteRange "+retrievalByteRange);
+                            sp = " ";
+                        }
+                        if (inventoryRetrievalParameters != null) {
+                            String sp1 = "";
+                            System.out.print(sp+"InventoryRetrievalParameters {");
+                            String format = inventoryRetrievalParameters.getFormat();
+                            String startDate = inventoryRetrievalParameters.getStartDate();
+                            String endDate = inventoryRetrievalParameters.getEndDate();
+                            String limit = inventoryRetrievalParameters.getLimit();
+                            String marker = inventoryRetrievalParameters.getMarker();
+                            if (format != null) {
+                                System.out.print("Format "+format);
+                                sp1 = " ";
+                            }
+                            if (startDate != null) {
+                                System.out.print(sp1+"StartDate "+startDate);
+                                sp1 = " ";
+                            }
+                            if (endDate != null) {
+                                System.out.print(sp1+"EndDate "+endDate);
+                                sp1 = " ";
+                            }
+                            if (limit != null) {
+                                System.out.print(sp1+"Limit "+limit);
+                                sp1 = " ";
+                            }
+                            if (marker != null) {
+                                System.out.print(sp1+"Marker "+marker);
+                            }
+                            System.out.print("}");
+                        }
                         System.out.print("}");
                         sp0 = " ";
                     }
                     System.out.println("");
                 }
             } catch (Exception e) {
-                System.err.println("Failed to list jobs "+job+": "+e.getMessage());
+                System.err.println("Failed to list jobs "+jobstring+": "+e.getMessage());
             }
         } else if (command.compareTo("DescribeJob") == 0) {
             if (args.length < 2) {
@@ -600,12 +707,154 @@ class main {
                 Usage();
             }
             String vaultName = args[1];
+            if (args.length < 3) {
+                System.err.println("Missing required jobId argument");
+                Usage();
+            }
+            String jobId = args[2];
+            AWSCredentials credentials = null;
+            try {
+                String homedir = System.getProperty("user.home");
+                File credfile = new File(homedir+"/.AwsCredentials");
+                credentials = new PropertiesCredentials(credfile);
+            } catch (IOException ioe) {
+                System.err.println("Failed to get credentials: " + ioe.getMessage());
+                System.exit(-1);
+            }
+        
+            AmazonGlacierClient client = new AmazonGlacierClient(credentials);
+            client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
+            try {
+                DescribeJobResult job = AmazonGlacierJobOperations.describeJob(client,vaultName,jobId);
+String sp = "";
+                //String jobId = job.getJobId();
+                String jobDescription = job.getJobDescription();
+                String action = job.getAction();
+                String archiveId = job.getArchiveId();
+                String vaultARN = job.getVaultARN();
+                String creationDate = job.getCreationDate();
+                Boolean completed = job.getCompleted();
+                String statusCode = job.getStatusCode();
+                String statusMessage = job.getStatusMessage();
+                Long archiveSizeInBytes = job.getArchiveSizeInBytes();
+                Long inventorySizeInBytes = job.getInventorySizeInBytes();
+                String sNSTopic = job.getSNSTopic();
+                String completionDate = job.getCompletionDate();
+                String sHA256TreeHash = job.getSHA256TreeHash();
+                String archiveSHA256TreeHash = job.getArchiveSHA256TreeHash();
+                String retrievalByteRange = job.getRetrievalByteRange();
+                InventoryRetrievalJobDescription inventoryRetrievalParameters = job.getInventoryRetrievalParameters();
+                System.out.print("JobId "+jobId);
+                sp = " ";
+                if (jobDescription != null) {
+                    System.out.print(sp+"JobDescription "+jobDescription);
+                    sp = " ";
+                }
+                if (action != null) {
+                    System.out.print(sp+"Action "+action);
+                    sp = " ";
+                }
+                if (archiveId != null) {
+                    System.out.print(sp+"ArchiveId "+archiveId);
+                    sp = " ";
+                }
+                if (vaultARN != null) {
+                    System.out.print(sp+"VaultARN "+vaultARN);
+                    sp = " ";
+                }
+                if (creationDate != null) {
+                    System.out.print(sp+"CreationDate "+creationDate);
+                    sp = " ";
+                }
+                System.out.print(sp+"Completed = "+completed);
+                sp = " ";
+                if (statusCode != null) {
+                    System.out.print(sp+"StatusCode "+statusCode);
+                    sp = " ";
+                }
+                if (statusMessage != null) {
+                    System.out.print(sp+"StatusMessage "+statusMessage);
+                    sp = " ";
+                }
+                System.out.print(sp+"ArchiveSizeInBytes "+archiveSizeInBytes);
+                sp = " ";
+                System.out.print(sp+"InventorySizeInBytes "+inventorySizeInBytes);
+                sp = " ";
+                if (sNSTopic != null) {
+                    System.out.print(sp+"SNSTopic "+sNSTopic);
+                    sp = " ";
+                }
+                if (completionDate != null) {
+                    System.out.print(sp+"CompletionDate "+completionDate);
+                    sp = " ";
+                }
+                if (sHA256TreeHash != null) {
+                    System.out.print(sp+"SHA256TreeHash "+sHA256TreeHash);
+                    sp = " ";
+                }
+                if (archiveSHA256TreeHash != null) {
+                    System.out.print(sp+"ArchiveSHA256TreeHash "+archiveSHA256TreeHash);
+                    sp = " ";
+                }
+                if (retrievalByteRange != null) {
+                    System.out.print(sp+"RetrievalByteRange "+retrievalByteRange);
+                    sp = " ";
+                }
+                if (inventoryRetrievalParameters != null) {
+                    String sp1 = "";
+                    System.out.print(sp+"InventoryRetrievalParameters {");
+                    String format = inventoryRetrievalParameters.getFormat();
+                    String startDate = inventoryRetrievalParameters.getStartDate();
+                    String endDate = inventoryRetrievalParameters.getEndDate();
+                    String limit = inventoryRetrievalParameters.getLimit();
+                    String marker = inventoryRetrievalParameters.getMarker();
+                    if (format != null) {
+                        System.out.print("Format "+format);
+                        sp1 = " ";
+                    }
+                    if (startDate != null) {
+                        System.out.print(sp1+"StartDate "+startDate);
+                        sp1 = " ";
+                    }
+                    if (endDate != null) {
+                        System.out.print(sp1+"EndDate "+endDate);
+                        sp1 = " ";
+                    }
+                    if (limit != null) {
+                        System.out.print(sp1+"Limit "+limit);
+                        sp1 = " ";
+                    }
+                    if (marker != null) {
+                        System.out.print(sp1+"Marker "+marker);
+                    }
+                    System.out.print("}");
+                }                
+            } catch (Exception e) {
+                System.err.println("Failed to describe job "+vaultName+" "+jobId+": "+e.getMessage());
+            }
         } else if (command.compareTo("GetJobOutput") == 0) {
             if (args.length < 2) {
                 System.err.println("Missing required vaultName argument");
                 Usage();
             }
             String vaultName = args[1];
+            if (args.length < 3) {
+                System.err.println("Missing required jobId argument");
+                Usage();
+            }
+            String jobId = args[2];
+            AWSCredentials credentials = null;
+            try {
+                String homedir = System.getProperty("user.home");
+                File credfile = new File(homedir+"/.AwsCredentials");
+                credentials = new PropertiesCredentials(credfile);
+            } catch (IOException ioe) {
+                System.err.println("Failed to get credentials: " + ioe.getMessage());
+                System.exit(-1);
+            }
+        
+            AmazonGlacierClient client = new AmazonGlacierClient(credentials);
+            client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
         } else {
             System.err.println("Missing required command");
             Usage();
@@ -638,7 +887,7 @@ class main {
         System.err.println(" GetJobOutput vaultname jobid [-output filename]");
         System.exit(-1);
     }
-    private boolean StringToBoolean(String boolstring) throws IllegalArgumentException {
+    private static boolean StringToBoolean(String boolstring) throws IllegalArgumentException {
         if (boolstring.compareTo("true") == 0) {
             return true;
         } else if (boolstring.compareTo("false") == 0) {
