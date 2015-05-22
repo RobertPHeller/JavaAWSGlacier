@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Mon May 18 09:47:03 2015
- *  Last Modified : <150521.2002>
+ *  Last Modified : <150522.0700>
  *
  *  Description	
  *
@@ -59,8 +59,6 @@ import com.amazonaws.services.glacier.model.ListJobsRequest;
 import com.amazonaws.services.glacier.model.ListJobsResult;
 import com.amazonaws.services.glacier.model.GlacierJobDescription;
 import com.amazonaws.services.glacier.model.InventoryRetrievalJobDescription;
-import com.amazonaws.services.glacier.model.GetJobOutputRequest;
-import com.amazonaws.services.glacier.model.GetJobOutputResult;
 import com.amazonaws.services.glacier.model.DescribeJobResult;
 import com.deepsoft.*;
 
@@ -843,6 +841,22 @@ String sp = "";
                 Usage();
             }
             String jobId = args[2];
+            String range = null;
+            String outputfile = "-";
+            int iopt = 3;
+            while (iopt < args.length) {
+                if (args[iopt].compareTo("-range") == 0 &&
+                    (iopt+1) < args.length) {
+                    range = args[iopt+1];
+                } else if (args[iopt].compareTo("-output") == 0 &&
+                          (iopt+1) < args.length) {
+                    outputfile = args[iopt+1];
+                } else {
+                    System.err.println("Unknown option: "+args[iopt]+", should be -range or -output");
+                    Usage();
+                }
+                iopt += 2;
+            }
             AWSCredentials credentials = null;
             try {
                 String homedir = System.getProperty("user.home");
@@ -855,6 +869,12 @@ String sp = "";
         
             AmazonGlacierClient client = new AmazonGlacierClient(credentials);
             client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
+            try {
+                AmazonGlacierJobOperations.getJobOutput(client,vaultName,jobId,range,outputfile);
+            } catch (Exception e) {
+                System.err.println("Failed to get job output ("+vaultName+" "+jobId+"): "+e.getMessage());
+                System.exit(-1);
+            }
         } else {
             System.err.println("Missing required command");
             Usage();

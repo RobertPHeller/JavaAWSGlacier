@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Thu May 21 15:02:55 2015
- *  Last Modified : <150521.1956>
+ *  Last Modified : <150522.0734>
  *
  *  Description	
  *
@@ -74,6 +74,26 @@ public class AmazonGlacierJobOperations {
               .withVaultName(vaultName)
               .withJobId(jobId);
         return client.describeJob(request);
+    }
+    public static void getJobOutput(AmazonGlacierClient client,String vaultName,String jobId,String range,String outputfile) throws Exception {
+        GetJobOutputRequest request = new GetJobOutputRequest()
+              .withVaultName(vaultName)
+              .withJobId(jobId);
+        if (range != null) {
+            request.setRange(range);
+        }
+        GetJobOutputResult result = client.getJobOutput(request);
+        java.io.InputStream bodyStream = result.getBody();
+        String contentType = result.getContentType();
+        
+        if (outputfile == null || outputfile.compareTo("-") == 0) {
+            // send body to stdout, discard meta data
+        } else {
+            // send body to outputfile, meta data to stdout
+            String checksum = result.getChecksum();
+            String contentRange = result.getContentRange();
+            
+        }
     }
 }
 

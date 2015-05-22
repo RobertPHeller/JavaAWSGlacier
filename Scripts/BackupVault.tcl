@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Wed Jul 30 15:32:49 2014
-#  Last Modified : <150521.1501>
+#  Last Modified : <150522.0645>
 #
 #  Description	
 #
@@ -159,14 +159,11 @@ snit::type BackupVault {
         if {$vnode eq {}} {
             error "No such vault: $vault"
         }
-        error "Not Implemented yet!"
-        set response [eval [list $glacierClient listJobs $vault] $args]
-        if {([$response getNcode] / 100) != 2} {
-            puts stderr "Failed to list jobs: [$response getCode]"
-            $response print stderr
+        if {[catch {eval [list $self run_java_GlacierClient ListJobs $vault] $args} result]} {
+            puts stderr "Failed to list jobs: $result"
             return {}
         } else {
-            return [$response getBody]
+            return $result
         }
     }
     method GetJobDescription {vault jobid} {
@@ -175,29 +172,23 @@ snit::type BackupVault {
         if {$vnode eq {}} {
             error "No such vault: $vault"
         }
-        error "Not Implemented yet!"
-        set response [$glacierClient describeJob $vault $jobid]
-        if {([$response getNcode] / 100) != 2} {
-            puts stderr "Failed to get job description: [$response getCode]"
-            $response print stderr
+        if {[catch {$self run_java_GlacierClient DescribeJob $vault} result]} {
+            puts stderr "Failed to get job description: $result"
             return {}
         } else {
-            return [$response getBody]
+            return $result
         }
     }
     method RetrieveArchive {vault archiveid jobid filename size range treehash wholetreehash} {
         #puts stderr "*** $self RetrieveArchive $vault $archiveid $jobid $filename $size $range $treehash $wholetreehash"
-        error "Not Implemented yet!"
         foreach {first last} [split $range -] {break}
         set partialsize [expr {(wide($last)-wide($first))+1}]
         if {wide($partialsize) == wide($size)} {
-            set response [$self RetrieveWholeArchive $vault $archiveid $jobid $filename $wholetreehash $size]
+            set result [$self RetrieveWholeArchive $vault $archiveid $jobid $filename $wholetreehash $size]
         } else {
-            set response [$self RetrievePartArchive $vault $archiveid $jobid $filename $treehash $partialsize]
+            set result [$self RetrievePartArchive $vault $archiveid $jobid $filename $treehash $partialsize]
         }
-        if {([$response getNcode] / 100) != 2} {
-            puts stderr "Failed to retrieve archive: [$response getCode]"
-            $response print stderr
+        if {$result eq {}} {
             return {}
         } else {
             return $filename
@@ -205,17 +196,17 @@ snit::type BackupVault {
     }
     method RetrieveWholeArchive {vault archiveid jobid filename wholetreehash size} {
         #puts stderr "*** $self RetrieveWholeArchiveInOnePart $vault $archiveid $jobid $filename $wholetreehash $size"
-        error "Not Implemented yet!"
         if {wide($size) > $Meg256} {
             return [$self RetrieveWholeArchiveInParts $vault $archiveid $jobid $filename $wholetreehash $size]
         } else {
-            set response [$glacierClient getJobOutput $vault $jobid -output $filename]
-            if {([$response getNcode] / 100) != 2} {
-                puts stderr "Failed to download archive: [$response getCode]"
-                $response print stderr
+            if {[catch {$self run_java_GlacierClient GetJobOutput $vault $jobid -output $filename} result]} {
+                puts stderr "Failed to download archive: $result"
                 return {}
             }
-            set computedTreeHash [AWS::BinaryUtils toHex [$checksum sha256_tree_hash $filename]]
+            if {[catch {$self run_java_GlacierClient TreeHash $filename} computedTreeHash]} {
+                puts stderr "Failed to compute tree hash: $computedTreeHash"
+                return {}
+            }
             if {$computedTreeHash ne $wholetreehash ||
                 [$response getResponseMetadataHeader x-amz-sha256-tree-hash] ne $computedTreeHash} {
                 puts stderr "Archive SHA256 Tree Hash failure: locally computed: $computedTreeHash, returned: [$response getResponseMetadataHeader x-amz-sha256-tree-hash], in job descr: $wholetreehash"
