@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Thu May 21 15:02:55 2015
- *  Last Modified : <150522.0734>
+ *  Last Modified : <150522.1017>
  *
  *  Description	
  *
@@ -43,6 +43,7 @@
 
 package com.deepsoft;
 
+import java.io.FileOutputStream;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
@@ -60,6 +61,7 @@ import com.amazonaws.services.glacier.model.DescribeJobRequest;
 import com.amazonaws.services.glacier.model.DescribeJobResult;
 
 public class AmazonGlacierJobOperations {
+    private static final int MEG256 = 256 * 1024 * 1024;
     public static InitiateJobResult initiateJob(AmazonGlacierClient client,String vaultName,JobParameters jobParams) throws Exception {
         InitiateJobRequest request = new InitiateJobRequest()
               .withVaultName(vaultName)
@@ -85,14 +87,24 @@ public class AmazonGlacierJobOperations {
         GetJobOutputResult result = client.getJobOutput(request);
         java.io.InputStream bodyStream = result.getBody();
         String contentType = result.getContentType();
+        byte buffer[] = new byte[MEG256];
+        int bytesRead;
         
         if (outputfile == null || outputfile.compareTo("-") == 0) {
             // send body to stdout, discard meta data
+            while ((bytesRead = bodyStream.read(buffer, 0, MEG256)) > 0) {
+                System.out.write(buffer, 0, bytesRead);
+            }
         } else {
             // send body to outputfile, meta data to stdout
             String checksum = result.getChecksum();
             String contentRange = result.getContentRange();
-            
+            FileOutputStream of = new FileOutputStream(outputfile);
+            while ((bytesRead = bodyStream.read(buffer, 0, MEG256)) > 0) {
+                of.write(buffer, 0, bytesRead);
+            }
+            of.close();
+            System.out.print("ContentType "+contentType+" Checksum "+checksum+" ContentRange "+contentRange);
         }
     }
 }

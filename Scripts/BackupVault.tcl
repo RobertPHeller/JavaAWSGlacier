@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Wed Jul 30 15:32:49 2014
-#  Last Modified : <150522.0645>
+#  Last Modified : <150522.1036>
 #
 #  Description	
 #
@@ -36,6 +36,7 @@ package require VaultXMLDB
 snit::type BackupVault {
     component glacierVaultDB
     
+    typevariable Meg256 [expr {wide(256 * 1024 * 1024)}]
     typevariable glacierTemp /home/AmazonGlacierTemp
     typevariable tempFileindex 1
     typevariable javacmd
@@ -203,13 +204,15 @@ snit::type BackupVault {
                 puts stderr "Failed to download archive: $result"
                 return {}
             }
+            array unset response
+            array set response $result
             if {[catch {$self run_java_GlacierClient TreeHash $filename} computedTreeHash]} {
                 puts stderr "Failed to compute tree hash: $computedTreeHash"
                 return {}
             }
             if {$computedTreeHash ne $wholetreehash ||
-                [$response getResponseMetadataHeader x-amz-sha256-tree-hash] ne $computedTreeHash} {
-                puts stderr "Archive SHA256 Tree Hash failure: locally computed: $computedTreeHash, returned: [$response getResponseMetadataHeader x-amz-sha256-tree-hash], in job descr: $wholetreehash"
+                $response(Checksum) ne $computedTreeHash} {
+                puts stderr "Archive SHA256 Tree Hash failure: locally computed: $computedTreeHash, returned: $response(Checksum), in job descr: $wholetreehash"
                 return {}
             }
             return $filename
@@ -217,7 +220,6 @@ snit::type BackupVault {
     }
     method RetrieveWholeArchiveInParts {vault archiveid jobid filename wholetreehash sizefilename wholetreehash size} {
         #puts stderr "*** $self RetrieveWholeArchiveInParts $vault $archiveid $jobid $filename $wholetreehash $sizefilename $wholetreehash $size"
-        error "Not Implemented yet!"
         set downloadpartfile [generateTempfile]
         set fp [open $filename w]
         fconfigure $fp -translation binary
@@ -231,15 +233,18 @@ snit::type BackupVault {
                 set partsize $remainder
             }
             set range [format {bytes=%d-%d} $pos [expr {(wide($pos)+wide($partsize))-1}]]
-            set response [$glacierClient getJobOutput $vault $jobid -output $downloadpartfile -range $range]
-            if {([$response getNcode] / 100) != 2} {
-                puts stderr "Failed to download archive part ($range): [$response getCode]"
-                $response print stderr
+            if {[catch {$self run_java_GlacierClient GetJobOutput $vault $jobid -output $downloadpartfile -range $range} result]} {
+                puts stderr "Failed to download archive part ($range): $result"
                 return {}
             }
-            set computedTreeHash [AWS::BinaryUtils toHex [$checksum sha256_tree_hash $downloadpartfile]]
-            if {$computedTreeHash ne [$response getResponseMetadataHeader x-amz-sha256-tree-hash]} {
-                puts stderr "Archive part ($range) SHA256 Tree Hash failure: locally computed: $computedTreeHash, returned: [$response getResponseMetadataHeader x-amz-sha256-tree-hash]"
+            array unset response
+            array set response $result
+            if {[catch {$self run_java_GlacierClient TreeHash $downloadpartfile} computedTreeHash]} {
+                puts stderr "Failed to compute tree hash: $computedTreeHash"
+                return {}
+            }
+            if {$computedTreeHash ne $response(Checksum)} {
+                puts stderr "Archive part ($range) SHA256 Tree Hash failure: locally computed: $computedTreeHash, returned: $response(Checksum)"
                 return {}
             }
             set dfp [open $downloadpartfile w]
@@ -254,9 +259,13 @@ snit::type BackupVault {
             close $dfp
             set pos [expr {wide(pos) + $partsize}]
             set done [expr {wide($pos) >= wide($size)}]
+            set remainder [expr {$remainder - $partsize}]
         }
         close $fp
-        set computedTreeHash [AWS::BinaryUtils toHex [$checksum sha256_tree_hash $filename]]
+        if {[catch {$self run_java_GlacierClient TreeHash $filename} computedTreeHash]} {
+            puts stderr "Failed to compute tree hash: $computedTreeHash"
+            return {}
+        }
         if {$computedTreeHash ne $wholetreehash} {
             puts stderr "Archive SHA256 Tree Hash failure: locally computed: $computedTreeHash, in job descr: $wholetreehash"
             return {}
@@ -264,24 +273,25 @@ snit::type BackupVault {
             return $filename
         }
     }
-            
     method RetrievePartArchive {vault archiveid jobid filename treehash partialsize} {
         #puts stderr "*** $self RetrievePartArchive $vault $archiveid $jobid $filename $treehash $partialsize"
-        error "Not Implemented yet!"
         foreach {first last} [split $range -] {break}
         if {wide($partialsize) > $Meg256Meg256} {
             return [$self RetrievePartArchivePartArchiveInParts $vault $archiveid $jobid $filename $treehash $partialsize]
         } else {
-            set response [$glacierClient getJobOutput $vault $jobid -output $filename]
-            if {([$response getNcode] / 100) != 2} {
-                puts stderr "Failed to download archive: [$response getCode]"
-                $response print stderr
+            if {[catch {$self run_java_GlacierClient GetJobOutput $vault $jobid -output $filename} result]} {
+                puts stderr "Failed to download archive: $result"
                 return {}
             }
-            set computedTreeHash [AWS::BinaryUtils toHex [$checksum sha256_tree_hash $filename]]
+            array unset response
+            array set response $result
+            if {[catch {$self run_java_GlacierClient TreeHash $filename} computedTreeHash]} {
+                puts stderr "Failed to compute tree hash: $computedTreeHash"
+                return {}
+            }
             if {$computedTreeHash ne $treehash ||
-                [$response getResponseMetadataHeader x-amz-sha256-tree-hash] ne $computedTreeHash} {
-                puts stderr "Archive SHA256 Tree Hash failure: locally computed: $computedTreeHash, returned: [$response getResponseMetadataHeader x-amz-sha256-tree-hash], in job descr: $treehash"
+                $response(Checksum) ne $computedTreeHash} {
+                puts stderr "Archive SHA256 Tree Hash failure: locally computed: $computedTreeHash, returned: $response(Checksum), in job descr: $treehash"
                 return {}
             }
             return $filename
@@ -289,7 +299,6 @@ snit::type BackupVault {
     }
     method RetrievePartArchivePartArchiveInParts {vault archiveid jobid filename treehash partialsize} {
         #puts stderr "*** $self RetrievePartArchivePartArchiveInParts $vault $archiveid $jobid $filename $treehash $partialsize"
-        error "Not Implemented yet!"
         
         set downloadpartfile [generateTempfile]
         set fp [open $filename w]
@@ -304,15 +313,18 @@ snit::type BackupVault {
                 set partsize $remainder
             }
             set range [format {bytes=%d-%d} $pos [expr {(wide($pos)+wide($partsize))-1}]]
-            set response [$glacierClient getJobOutput $vault $jobid -output $downloadpartfile -range $range]
-            if {([$response getNcode] / 100) != 2} {
-                puts stderr "Failed to download archive part ($range): [$response getCode]"
-                $response print stderr
+            if {[catch {$self run_java_GlacierClient GetJobOutput $vault $jobid -output $downloadpartfile -range $range} result]} {
+                puts stderr "Failed to download archive part ($range): $result"
                 return {}
             }
-            set amztreehash [$response getResponseMetadataHeader x-amz-sha256-tree-hash]
-            if {$amztreehash ne {}} {
-                set computedTreeHash [AWS::BinaryUtils toHex [$checksum sha256_tree_hash $downloadpartfile]]
+            array unset response
+            array set response $result
+            set amztreehash $response(Checksum)
+            if {$amztreehash ne "null"} {
+                if {[catch {$self run_java_GlacierClient TreeHash $downloadpartfile} computedTreeHash]} {
+                    puts stderr "Failed to compute tree hash: $computedTreeHash"
+                    return {}
+                }
                 if {$computedTreeHash ne $amztreehash} {
                     puts stderr "Archive part ($range) SHA256 Tree Hash failure: locally computed: $computedTreeHash, returned: $amztreehash"
                     return {}
@@ -329,11 +341,15 @@ snit::type BackupVault {
             }
             close $dfp
             set pos [expr {wide(pos) + $partsize}]
-            set done [expr {wide($pos) >= wide($size)}]
+            set done [expr {wide($pos) >= wide($partialsize)}]
+            set remainder [expr {$remainder - $partsize}]
         }
         close $fp
         if {$treehash ne {}} {
-            set computedTreeHash [AWS::BinaryUtils toHex [$checksum sha256_tree_hash $filename]]
+            if {[catch {$self run_java_GlacierClient TreeHash $filename} computedTreeHash]} {
+                puts stderr "Failed to compute tree hash: $computedTreeHash"
+                return {}
+            }
             if {$computedTreeHash ne $treehash} {
                 puts stderr "Archive SHA256 Tree Hash failure: locally computed: $computedTreeHash, in job descr: $wholetreehash"
                 return {}
