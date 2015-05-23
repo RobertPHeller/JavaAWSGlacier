@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Wed Jul 30 15:32:49 2014
-#  Last Modified : <150522.1036>
+#  Last Modified : <150523.0833>
 #
 #  Description	
 #
@@ -36,6 +36,7 @@ package require VaultXMLDB
 snit::type BackupVault {
     component glacierVaultDB
     
+    typevariable timeFormatter {%a, %d %h %Y %H:%M:%S GMT}
     typevariable Meg256 [expr {wide(256 * 1024 * 1024)}]
     typevariable glacierTemp /home/AmazonGlacierTemp
     typevariable tempFileindex 1
@@ -73,7 +74,6 @@ snit::type BackupVault {
             set glacierVaultDB [VaultXMLDB newdb]
         }
     }
-    typevariable timeFormatter {%Y%m%dT%H%M%SZ}
     method CreateNewVault {vaultname} {
         #puts stderr "*** $self CreateNewVault $vaultname"
         if {[catch {$self run_java_GlacierClient CreateVault $vaultname} result]} {

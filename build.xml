@@ -2,7 +2,7 @@
 <!--
     Created By    : Robert Heller
     Created       : Mon May 18 09:42:34 2015
-    Last Modified : <150519.1655>
+    Last Modified : <150523.1128>
 
     Description	
     
@@ -28,7 +28,7 @@
 -->
 <project name="JavaAWSGlacier" default="dist" basedir=".">
   <description>
-    Vault XML Database
+    AWS Glacier package
   </description>
   <!-- set global properties for this build -->
   <property name="src" location="src"/>
