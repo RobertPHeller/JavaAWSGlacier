@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 19 09:13:42 2015
- *  Last Modified : <150521.0812>
+ *  Last Modified : <150523.1531>
  *
  *  Description	
  *
@@ -77,7 +77,7 @@ import com.amazonaws.util.BinaryUtils;
 
 public class AmazonGlacierArchiveOperations {
     private static final long MEG256 = 256 * 1024 * 1024;
-    private static class UploadResult {
+    public static class UploadResult {
         public String location;
         public String sha256treehash;
         public UploadResult(String l, String checksum) {
@@ -85,7 +85,7 @@ public class AmazonGlacierArchiveOperations {
             this.sha256treehash = checksum;
         }
     }
-    public static void uploadArchive(AmazonGlacierClient client, String vaultName, File archiveFile) throws Exception {
+    public static UploadResult uploadArchive(AmazonGlacierClient client, String vaultName, File archiveFile) throws Exception {
         //System.err.println("*** AmazonGlacierArchiveOperations.uploadArchive(client,"+vaultName+","+archiveFile+")");
         String description = archiveFile.getName();
         //System.err.println("*** AmazonGlacierArchiveOperations.uploadArchive(): description = "+description);
@@ -97,7 +97,7 @@ public class AmazonGlacierArchiveOperations {
         } else {
             result = UploadArchiveInOnePart(client,vaultName,archiveFile,size,description);
         }
-        System.out.println(result.location+" "+result.sha256treehash+" {"+description+"}");
+        return result;
     }
     private static UploadResult UploadArchiveInOnePart(AmazonGlacierClient client, String vaultName, File archiveFile, long size, String description) throws Exception {
         InputStream is = new FileInputStream(archiveFile);

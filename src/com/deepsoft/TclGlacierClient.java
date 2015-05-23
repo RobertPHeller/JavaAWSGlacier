@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Mon May 18 09:47:03 2015
- *  Last Modified : <150522.0700>
+ *  Last Modified : <150523.1707>
  *
  *  Description	
  *
@@ -63,7 +63,7 @@ import com.amazonaws.services.glacier.model.DescribeJobResult;
 import com.deepsoft.*;
 
 
-class main {
+class TclGlacierClient {
     static public void main(String args[]) {
         if (args.length < 1) {
             Usage();
@@ -107,7 +107,8 @@ class main {
             AmazonGlacierClient client = new AmazonGlacierClient(credentials);
             client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
             try {
-                AmazonGlacierVaultOperations.createVault(client, vaultName);
+                String loc = AmazonGlacierVaultOperations.createVault(client, vaultName);
+                System.out.println(vaultName + " " + loc);
             } catch (Exception e) {
                 System.err.println("Vault operation failed." + e.getMessage());
             }
@@ -199,8 +200,10 @@ class main {
             AmazonGlacierClient client = new AmazonGlacierClient(credentials);
             client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
             try {
-                AmazonGlacierArchiveOperations.uploadArchive(client,vaultName,
-                          archiveFile);
+                AmazonGlacierArchiveOperations.UploadResult result =
+                      AmazonGlacierArchiveOperations.uploadArchive(client,vaultName,
+                                archiveFile);
+                System.out.println(result.location+" "+result.sha256treehash+" {"+archiveFile.getName()+"}");
             } catch (Exception e) {
                 System.err.println("Archive operation failed." + e.getMessage());
             }

@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Mon May 18 10:48:03 2015
- *  Last Modified : <150518.1623>
+ *  Last Modified : <150523.1450>
  *
  *  Description	
  *
@@ -83,15 +83,14 @@ public class AmazonGlacierVaultOperations {
             
         }
     }
-    public static void createVault(AmazonGlacierClient client, String vaultName)
+    public static String createVault(AmazonGlacierClient client, String vaultName)
     {
         
         CreateVaultRequest createVaultRequest = new CreateVaultRequest()
               .withVaultName(vaultName);
         
         CreateVaultResult createVaultResult = client.createVault(createVaultRequest);
-        
-        System.out.println(vaultName + " " + createVaultResult.getLocation());
+        return createVaultResult.getLocation();
     }
     
     public static void describeVault(AmazonGlacierClient client, String

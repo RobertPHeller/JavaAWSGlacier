@@ -2,7 +2,7 @@
 <!--
     Created By    : Robert Heller
     Created       : Mon May 18 09:42:34 2015
-    Last Modified : <150523.1128>
+    Last Modified : <150523.1706>
 
     Description	
     
@@ -80,7 +80,7 @@
     <mkdir dir="${dist}/lib"/>
     <manifest file="${dist}/lib/MANIFEST.MF">
       <attribute name="Built-By" value="${user.name}"/>
-      <attribute name="Main-Class" value="com.deepsoft.main"/>
+      <attribute name="Main-Class" value="com.deepsoft.TclGlacierClient"/>
     </manifest>
     <!-- Put everything in ${build} into the JavaAWSGlacier-${DSTAMP}.jar file -->
     
