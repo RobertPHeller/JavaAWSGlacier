@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 23 14:21:22 2015
- *  Last Modified : <150523.1658>
+ *  Last Modified : <150524.0905>
  *
  *  Description	
  *
@@ -50,11 +50,16 @@ import java.text.SimpleDateFormat;
 import java.security.NoSuchAlgorithmException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.PropertiesCredentials;
+import com.amazonaws.services.glacier.TreeHashGenerator;
 import com.amazonaws.services.glacier.AmazonGlacierClient;
 import com.amazonaws.services.glacier.model.ListPartsResult;
 import com.amazonaws.services.glacier.model.ListMultipartUploadsResult;
 import com.amazonaws.services.glacier.model.JobParameters;
 import com.amazonaws.services.glacier.model.InitiateJobResult;
+import com.amazonaws.services.glacier.model.ListJobsRequest;
+import com.amazonaws.services.glacier.model.ListJobsResult;
+import com.amazonaws.services.glacier.model.DescribeJobResult;
+import com.amazonaws.services.glacier.model.GetJobOutputResult;
 import org.w3c.dom.*;
 import com.deepsoft.VaultXMLDB;
 
@@ -64,14 +69,21 @@ import com.deepsoft.VaultXMLDB;
 
 class BackupVault extends VaultXMLDB {
     private final SimpleDateFormat dateFormatter = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z");
-    private final long Meg256 = 256 * 1024 * 1024;
+    private final int Meg256 = 256 * 1024 * 1024;
     private final String glacierTemp = "/home/AmazonGlacierTemp";
     private int tempFileindex = 1;
+    private AmazonGlacierClient client;
     public BackupVault(String dbfile) throws Exception {
         this(new File(dbfile));
     }
     public BackupVault(File file) throws Exception {
         super(file,false);
+        AWSCredentials credentials = null;
+        String homedir = System.getProperty("user.home");
+        File credfile = new File(homedir+"/.AwsCredentials");
+        credentials = new PropertiesCredentials(credfile);
+        client = new AmazonGlacierClient(credentials);
+        client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
     }
     private File generateTempfile() {
         while (true) {
@@ -85,25 +97,12 @@ class BackupVault extends VaultXMLDB {
         }
     }
     public Element CreateNewVault (String vaultName) throws Exception {
-        AWSCredentials credentials = null;
-        String homedir = System.getProperty("user.home");
-        File credfile = new File(homedir+"/.AwsCredentials");
-        credentials = new PropertiesCredentials(credfile);
-        AmazonGlacierClient client = new AmazonGlacierClient(credentials);
-        client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
         String loc = AmazonGlacierVaultOperations.createVault(client, vaultName);
         String date = dateFormatter.format(new Date());
         return addvault(loc,date.toString());
     }
     public Element UploadArchive (String vaultName, String archivefile) throws Exception {
         File archiveFile = new File(archivefile);
-        AWSCredentials credentials = null;
-        String homedir = System.getProperty("user.home");
-        File credfile = new File(homedir+"/.AwsCredentials");
-        credentials = new PropertiesCredentials(credfile);
-        
-        AmazonGlacierClient client = new AmazonGlacierClient(credentials);
-        client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
         AmazonGlacierArchiveOperations.UploadResult result = 
               AmazonGlacierArchiveOperations.uploadArchive(client,vaultName,
                         archiveFile);
@@ -116,36 +115,15 @@ class BackupVault extends VaultXMLDB {
         return ListParts(vaultName,uploadId,null,null);
     }
     public ListPartsResult ListParts(String vaultName, String uploadId,String marker, String limit) throws Exception {
-        AWSCredentials credentials = null;
-        String homedir = System.getProperty("user.home");
-        File credfile = new File(homedir+"/.AwsCredentials");
-        credentials = new PropertiesCredentials(credfile);
-        
-        AmazonGlacierClient client = new AmazonGlacierClient(credentials);
-        client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
         return AmazonGlacierArchiveOperations.listParts(client,vaultName,uploadId,marker,limit);
     }
     public ListMultipartUploadsResult ListMultiPartUploads(String vaultName) throws Exception {
         return ListMultiPartUploads(vaultName,null,null);
     }
     public ListMultipartUploadsResult ListMultiPartUploads(String vaultName,String marker, String limit) throws Exception {
-        AWSCredentials credentials = null;
-        String homedir = System.getProperty("user.home");
-        File credfile = new File(homedir+"/.AwsCredentials");
-        credentials = new PropertiesCredentials(credfile);
-        
-        AmazonGlacierClient client = new AmazonGlacierClient(credentials);
-        client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
         return AmazonGlacierArchiveOperations.listMultipartUploads(client,vaultName,marker,limit);
     }
     public void AbortMultipartUpload(String vaultName,String uploadId) throws Exception {
-        AWSCredentials credentials = null;
-        String homedir = System.getProperty("user.home");
-        File credfile = new File(homedir+"/.AwsCredentials");
-        credentials = new PropertiesCredentials(credfile);
-        
-        AmazonGlacierClient client = new AmazonGlacierClient(credentials);
-        client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
         AmazonGlacierArchiveOperations.abortMultipartUpload(client,vaultName,uploadId);
     }
     public String InitiateRetrieveArchiveJob(String vaultName, String archive, String snstopic) throws Exception {
@@ -161,15 +139,266 @@ class BackupVault extends VaultXMLDB {
               .withType("archive-retrieval")
               .withArchiveId(anode.getAttribute("archiveid"))
               .withSNSTopic(snstopic);
-        AWSCredentials credentials = null;
-        String homedir = System.getProperty("user.home");
-        File credfile = new File(homedir+"/.AwsCredentials");
-        credentials = new PropertiesCredentials(credfile);
-        
-        AmazonGlacierClient client = new AmazonGlacierClient(credentials);
-        client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
         InitiateJobResult jResult = AmazonGlacierJobOperations.initiateJob(client,vaultName,jobParams);
         return jResult.getJobId();
     }
-    
+    private boolean StringToBoolean(String boolstring) throws IllegalArgumentException {
+        if (boolstring.compareTo("true") == 0) {
+            return true;
+        } else if (boolstring.compareTo("false") == 0) {
+            return false;
+        } else if (boolstring.compareTo("yes") == 0) {
+            return true;
+        } else if (boolstring.compareTo("no") == 0) {
+            return false;
+        } else if (boolstring.compareTo("1") == 0) {
+            return true;
+        } else if (boolstring.compareTo("0") == 0) {
+            return false;
+        } else {
+            throw new IllegalArgumentException("Expected true/false/yes/no/1/0, got "+boolstring);
+        }
+    }
+    public ListJobsResult GetJobList(String vaultName, String... args) throws Exception {
+        Element vnode = findvaultbyname(vaultName);
+        if (vnode == null) {
+            throw new Exception("No such vault: "+vaultName);
+        }
+        ListJobsRequest ljRequest = new ListJobsRequest()
+              .withVaultName(vaultName);
+        int iopt = 0;
+        while (iopt < args.length) {
+            if (args[iopt].compareTo("-completed") == 0 &&
+                (iopt+1) < args.length) {
+                boolean completed = false;
+                completed = StringToBoolean(args[iopt+1]);
+                if (completed) {
+                    ljRequest.setCompleted("true");
+                } else {
+                    ljRequest.setCompleted("false");
+                }
+            } else if (args[iopt].compareTo("-limit") == 0 &&
+                      (iopt+1) < args.length) {
+                ljRequest.setLimit(args[iopt+1]);
+            } else if (args[iopt].compareTo("-marker") == 0 &&
+                      (iopt+1) < args.length) {
+                ljRequest.setMarker(args[iopt+1]);
+            } else if (args[iopt].compareTo("-statuscode") == 0 &&
+                      (iopt+1) < args.length) {
+                ljRequest.setStatuscode(args[iopt+1]);
+            } else {
+                throw new Exception("Unknown option: "+args[iopt]+", should be one of  -completed, -limit, -marker, or -statuscode");
+            }
+            iopt += 2;
+        }
+        return AmazonGlacierJobOperations.listJobs(client,vaultName,ljRequest);
+    }
+    public DescribeJobResult GetJobDescription(String vaultName,String jobId) throws Exception {
+        Element vnode = findvaultbyname(vaultName);
+        if (vnode == null) {
+            throw new Exception("No such vault: "+vaultName);
+        }
+        return AmazonGlacierJobOperations.describeJob(client,vaultName,jobId);
+    }
+    public String RetrieveArchive(String vault, String archiveid, String jobid, String filename, long size, String range, String treehash, String wholetreehash) throws Exception {
+        long first = 0, last = 0;
+        if (range.matches("^[0-9]+-[0-9]+$")) {
+            String m[] = range.split("-");
+            first = Long.parseLong(m[0]);
+            last  = Long.parseLong(m[1]);
+        } else {
+            throw new Exception("Illformed range: "+range);
+        }
+        long partialsize = (last-first)+1;
+        String result = null;
+        if (partialsize == size) {
+            result = RetrieveWholeArchive(vault,archiveid,jobid,filename,wholetreehash,size);
+        } else {
+            result = RetrievePartArchive(vault,archiveid,jobid,filename,treehash,partialsize);
+        }
+        if (result == null) {
+            return null;
+        } else {
+            return filename;
+        }
+    }
+    private String RetrieveWholeArchive(String vault, String archiveid, String jobid, String filename, String wholetreehash, long size) throws Exception {
+        if (size > (long)Meg256) {
+            return RetrieveWholeArchiveInParts(vault,archiveid,jobid,filename,wholetreehash,size);
+        } else {
+            GetJobOutputResult result = AmazonGlacierJobOperations.getJobOutput(client,vault,jobid,null);
+            java.io.InputStream bodyStream = result.getBody();
+            byte buffer[] = new byte[Meg256];
+            int bytesRead;
+            
+            String Checksum = result.getChecksum();
+            File file = new File(filename);
+            FileOutputStream of = new FileOutputStream(file);
+            while ((bytesRead = bodyStream.read(buffer, 0, Meg256)) > 0) {
+                of.write(buffer, 0, bytesRead);
+            }
+            of.close();
+            
+            String computedTreeHash = TreeHashGenerator.calculateTreeHash(file);
+            if (computedTreeHash.compareTo(wholetreehash) != 0 ||
+                computedTreeHash.compareTo(Checksum) != 0) {
+                throw new Exception("Archive SHA256 Tree Hash failure: locally computed: "+computedTreeHash+", returned: "+Checksum+", in job descr: "+wholetreehash);
+            }
+            return filename;
+        }
+    }
+    private String RetrieveWholeArchiveInParts(String vault, String archiveid, String jobid, String filename, String wholetreehash, long size) throws Exception {
+        File downloadpartfile = generateTempfile();
+        File file = new File(filename);
+        FileOutputStream fp = new FileOutputStream(file);
+        boolean done = false;
+        long pos = 0;
+        long remainder = size;
+        int partsize = 0;
+        while (!done) {
+            if (remainder > (long)Meg256) {
+                partsize = Meg256;
+            } else {
+                partsize = (int)remainder;
+            }
+            Formatter f = new Formatter();
+            f.format("bytes=%d-%d",pos,(pos+partsize)-1);
+            String range = f.toString();
+            GetJobOutputResult result = AmazonGlacierJobOperations.getJobOutput(client,vault,jobid,range);
+            java.io.InputStream bodyStream = result.getBody();
+            byte buffer[] = new byte[Meg256];
+            int bytesRead;
+            
+            String Checksum = result.getChecksum();
+            FileOutputStream of = new FileOutputStream(downloadpartfile);
+            while ((bytesRead = bodyStream.read(buffer, 0, Meg256)) > 0) {
+                of.write(buffer, 0, bytesRead);
+            }
+            of.close();
+            
+            String computedTreeHash = TreeHashGenerator.calculateTreeHash(downloadpartfile);
+            if (computedTreeHash.compareTo(Checksum) != 0) {
+                throw new Exception("Archive part ("+range+") SHA256 Tree Hash failure: locally computed: "+computedTreeHash+", returned: "+Checksum);
+            }
+            FileInputStream dfp = new FileInputStream(downloadpartfile);
+            while ((bytesRead = dfp.read(buffer, 0, Meg256)) > 0) {
+                fp.write(buffer, 0, bytesRead);
+            }
+            dfp.close();
+            pos += partsize;
+            remainder -= partsize;
+            done = pos >= size;
+        }
+        fp.close();
+        String computedTreeHash = TreeHashGenerator.calculateTreeHash(file);
+        if (computedTreeHash.compareTo(wholetreehash) != 0) {
+            throw new Exception("Archive SHA256 Tree Hash failure: locally computed: "+computedTreeHash+", in job descr: "+wholetreehash);
+        } else {
+            return filename;
+        }
+    }
+    private String RetrievePartArchive(String vault,String archiveid,String jobid,String filename,String treehash,long partialsize) throws Exception {
+        if (partialsize > (long)Meg256) {
+            return RetrievePartArchivePartArchiveInParts(vault,archiveid,jobid,filename,treehash,partialsize);
+        } else {
+            GetJobOutputResult result = AmazonGlacierJobOperations.getJobOutput(client,vault,jobid,null);
+            java.io.InputStream bodyStream = result.getBody();
+            byte buffer[] = new byte[Meg256];
+            int bytesRead;
+            
+            String Checksum = result.getChecksum();
+            File file = new File(filename);
+            FileOutputStream of = new FileOutputStream(file);
+            while ((bytesRead = bodyStream.read(buffer, 0, Meg256)) > 0) {
+                of.write(buffer, 0, bytesRead);
+            }
+            of.close();
+            
+            String computedTreeHash = TreeHashGenerator.calculateTreeHash(file);
+            if (computedTreeHash.compareTo(treehash) != 0 ||
+                computedTreeHash.compareTo(Checksum) != 0) {
+                throw new Exception("Archive SHA256 Tree Hash failure: locally computed: "+computedTreeHash+", returned: "+Checksum+", in job descr: "+treehash);
+            }
+            return filename;
+        }
+    }
+    private String RetrievePartArchivePartArchiveInParts(String vault,String archiveid,String jobid,String filename,String treehash,long partialsize) throws Exception {
+        File downloadpartfile = generateTempfile();
+        File file = new File(filename);
+        FileOutputStream fp = new FileOutputStream(file);
+        boolean done = false;
+        long pos = 0;
+        long remainder = partialsize;
+        int partsize = 0;
+        while (!done) {
+            if (remainder > (long)Meg256) {
+                partsize = Meg256;
+            } else {
+                partsize = (int)remainder;
+            }
+            Formatter f = new Formatter();
+            f.format("bytes=%d-%d",pos,(pos+partsize)-1);
+            String range = f.toString();
+            GetJobOutputResult result = AmazonGlacierJobOperations.getJobOutput(client,vault,jobid,range);
+            java.io.InputStream bodyStream = result.getBody();
+            byte buffer[] = new byte[Meg256];
+            int bytesRead;
+            
+            String Checksum = result.getChecksum();
+            FileOutputStream of = new FileOutputStream(downloadpartfile);
+            while ((bytesRead = bodyStream.read(buffer, 0, Meg256)) > 0) {
+                of.write(buffer, 0, bytesRead);
+            }
+            of.close();
+            
+            if (Checksum != null) {
+                String computedTreeHash = TreeHashGenerator.calculateTreeHash(downloadpartfile);
+                if (computedTreeHash.compareTo(Checksum) != 0) {
+                    throw new Exception("Archive part ("+range+") SHA256 Tree Hash failure: locally computed: "+computedTreeHash+", returned: "+Checksum);
+                }
+            }
+            FileInputStream dfp = new FileInputStream(downloadpartfile);
+            while ((bytesRead = dfp.read(buffer, 0, Meg256)) > 0) {
+                fp.write(buffer, 0, bytesRead);
+            }
+            dfp.close();
+            pos += partsize;
+            remainder -= partsize;
+            done = pos >= partialsize;
+        }
+        fp.close();
+        if (treehash != null) {
+            String computedTreeHash = TreeHashGenerator.calculateTreeHash(file);
+            if (computedTreeHash.compareTo(treehash) != 0) {
+                throw new Exception("Archive SHA256 Tree Hash failure: locally computed: "+computedTreeHash+", in job descr: "+treehash);
+            } else {
+                return filename;
+            }
+        } else {
+            return filename;
+        }
+    }
+    public String deletearchive(String vault,String archive) throws Exception {
+        Element vnode = findvaultbyname(vault);
+        if (vnode == null) {
+            throw new Exception("No such vault: "+vault);
+        }
+        Element anode = findarchivebydescr(vnode,archive);
+        if (anode == null) {
+            throw new Exception("No such archive in "+vault+": "+archive);
+        }
+        String archiveid = anode.getAttribute("archiveid");
+        AmazonGlacierArchiveOperations.deleteArchive(client,vault,archiveid);
+        removearchive(vault,archiveid);
+        return vault+" "+archiveid;
+    }
+    public String deletevault(String vault) throws Exception {
+        Element vnode = findvaultbyname(vault);
+        if (vnode == null) {
+            throw new Exception("No such vault: "+vault);
+        }
+        AmazonGlacierVaultOperations.deleteVault(client, vault);
+        removevault(vault);
+        return vault;
+    }
 }

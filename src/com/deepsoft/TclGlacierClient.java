@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Mon May 18 09:47:03 2015
- *  Last Modified : <150523.1707>
+ *  Last Modified : <150524.0906>
  *
  *  Description	
  *
@@ -60,10 +60,12 @@ import com.amazonaws.services.glacier.model.ListJobsResult;
 import com.amazonaws.services.glacier.model.GlacierJobDescription;
 import com.amazonaws.services.glacier.model.InventoryRetrievalJobDescription;
 import com.amazonaws.services.glacier.model.DescribeJobResult;
+import com.amazonaws.services.glacier.model.GetJobOutputResult;
 import com.deepsoft.*;
 
 
 class TclGlacierClient {
+    private static final int MEG256 = 256*1024*1024;
     static public void main(String args[]) {
         if (args.length < 1) {
             Usage();
@@ -77,8 +79,7 @@ class TclGlacierClient {
             File inputFile = new File(args[1]);
             try {
                 byte[] treeHash = TreeHash.computeSHA256TreeHash(inputFile);
-                System.out.printf("SHA-256 Tree Hash of %s is %s\n",
-                          inputFile, TreeHash.toHex(treeHash));
+                System.out.println(TreeHash.toHex(treeHash));
             } catch (IOException ioe) {
                 System.err.format("Exception when reading from file %s: %s",
                           inputFile, ioe.getMessage());
@@ -873,7 +874,28 @@ String sp = "";
             AmazonGlacierClient client = new AmazonGlacierClient(credentials);
             client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
             try {
-                AmazonGlacierJobOperations.getJobOutput(client,vaultName,jobId,range,outputfile);
+                GetJobOutputResult result = AmazonGlacierJobOperations.getJobOutput(client,vaultName,jobId,range);
+                java.io.InputStream bodyStream = result.getBody();
+                String contentType = result.getContentType();
+                byte buffer[] = new byte[MEG256];
+                int bytesRead;
+                
+                if (outputfile == null || outputfile.compareTo("-") == 0) {
+                    // send body to stdout, discard meta data
+                    while ((bytesRead = bodyStream.read(buffer, 0, MEG256)) > 0) {
+                        System.out.write(buffer, 0, bytesRead);
+                    }
+                } else {
+                    // send body to outputfile, meta data to stdout
+                    String checksum = result.getChecksum();
+                    String contentRange = result.getContentRange();
+                    FileOutputStream of = new FileOutputStream(outputfile);
+                    while ((bytesRead = bodyStream.read(buffer, 0, MEG256)) > 0) {
+                        of.write(buffer, 0, bytesRead);
+                    }
+                    of.close();
+                    System.out.print("ContentType "+contentType+" Checksum "+checksum+" ContentRange "+contentRange);
+                }
             } catch (Exception e) {
                 System.err.println("Failed to get job output ("+vaultName+" "+jobId+"): "+e.getMessage());
                 System.exit(-1);

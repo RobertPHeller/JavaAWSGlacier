@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Thu May 21 15:02:55 2015
- *  Last Modified : <150522.1017>
+ *  Last Modified : <150523.1951>
  *
  *  Description	
  *
@@ -77,35 +77,14 @@ public class AmazonGlacierJobOperations {
               .withJobId(jobId);
         return client.describeJob(request);
     }
-    public static void getJobOutput(AmazonGlacierClient client,String vaultName,String jobId,String range,String outputfile) throws Exception {
+    public static GetJobOutputResult getJobOutput(AmazonGlacierClient client,String vaultName,String jobId,String range) throws Exception {
         GetJobOutputRequest request = new GetJobOutputRequest()
               .withVaultName(vaultName)
               .withJobId(jobId);
         if (range != null) {
             request.setRange(range);
         }
-        GetJobOutputResult result = client.getJobOutput(request);
-        java.io.InputStream bodyStream = result.getBody();
-        String contentType = result.getContentType();
-        byte buffer[] = new byte[MEG256];
-        int bytesRead;
-        
-        if (outputfile == null || outputfile.compareTo("-") == 0) {
-            // send body to stdout, discard meta data
-            while ((bytesRead = bodyStream.read(buffer, 0, MEG256)) > 0) {
-                System.out.write(buffer, 0, bytesRead);
-            }
-        } else {
-            // send body to outputfile, meta data to stdout
-            String checksum = result.getChecksum();
-            String contentRange = result.getContentRange();
-            FileOutputStream of = new FileOutputStream(outputfile);
-            while ((bytesRead = bodyStream.read(buffer, 0, MEG256)) > 0) {
-                of.write(buffer, 0, bytesRead);
-            }
-            of.close();
-            System.out.print("ContentType "+contentType+" Checksum "+checksum+" ContentRange "+contentRange);
-        }
+        return client.getJobOutput(request);
     }
 }
 

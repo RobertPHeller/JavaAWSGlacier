@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 23 11:30:46 2015
- *  Last Modified : <150523.1510>
+ *  Last Modified : <150524.1806>
  *
  *  Description	
  *
@@ -98,6 +98,9 @@ class VaultXMLDB {
         file.renameTo(new File(file.getPath()+".bak"));
         StreamResult result = new StreamResult(file);
         transformer.transform(source, result);
+    }
+    public Element getvaultnode() {
+        return (Element) db.getElementsByTagName("vaults").item(0);
     }
     public Element addvault (String location, String date) throws Exception {
         return addvault (location,date,"");

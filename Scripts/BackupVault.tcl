@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Wed Jul 30 15:32:49 2014
-#  Last Modified : <150523.0833>
+#  Last Modified : <150523.2045>
 #
 #  Description	
 #
@@ -218,7 +218,7 @@ snit::type BackupVault {
             return $filename
         }
     }
-    method RetrieveWholeArchiveInParts {vault archiveid jobid filename wholetreehash sizefilename wholetreehash size} {
+    method RetrieveWholeArchiveInParts {vault archiveid jobid filename wholetreehash size} {
         #puts stderr "*** $self RetrieveWholeArchiveInParts $vault $archiveid $jobid $filename $wholetreehash $sizefilename $wholetreehash $size"
         set downloadpartfile [generateTempfile]
         set fp [open $filename w]
@@ -247,7 +247,7 @@ snit::type BackupVault {
                 puts stderr "Archive part ($range) SHA256 Tree Hash failure: locally computed: $computedTreeHash, returned: $response(Checksum)"
                 return {}
             }
-            set dfp [open $downloadpartfile w]
+            set dfp [open $downloadpartfile r]
             fconfigure $dfp -translation binary
             if {[catch {fcopy $dfp $fp} ps]} {
                 puts stderr "Archive part ($range) copy failed: $ps"
