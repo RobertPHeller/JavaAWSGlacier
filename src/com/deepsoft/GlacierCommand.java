@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150526.1926>
+ *  Last Modified : <150526.1937>
  *
  *  Description	
  *
@@ -132,7 +132,12 @@ public class GlacierCommand extends BackupVault {
             long totalsize = 0;
             for (int j=0; j < archives.getLength();j++) {
                 Element a = (Element) archives.item(i);
-                long size = Long.parseLong(a.getAttribute("size"),10);
+                NodeList sizes = a.getElementsByTagName("size");
+                long size = 0;
+                if (sizes != null && sizes.getLength() > 0) {
+                    Element sizeelt = (Element) sizes.item(0);
+                    size = Long.parseLong(sizeelt.getTextContent());
+                }
                 totalsize += size;
             }
             System.out.print("  Total size: "+Humansize(totalsize)+" byte");
@@ -153,13 +158,13 @@ public class GlacierCommand extends BackupVault {
             f.format("%5.1fK",(double)s / 1024.0);
             return f.toString();
         } else if (s < (1024*1024*1024)) {
-            f.format("%5.1M",(double)s / (1024.0*1024.0));
+            f.format("%5.1fM",(double)s / (1024.0*1024.0));
             return f.toString();
         } else if (s < (1024*1024*1024*1024)) {
-            f.format("%5.1G",(double)s / (1024.0*1024.0*1024.0));
+            f.format("%5.1fG",(double)s / (1024.0*1024.0*1024.0));
             return f.toString();
         } else {
-            f.format("%5.1T",(double)s / (1024.0*1024.0*1024.0*1024.0));
+            f.format("%5.1fT",(double)s / (1024.0*1024.0*1024.0*1024.0));
             return f.toString();
         }
     }
