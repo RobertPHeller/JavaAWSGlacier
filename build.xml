@@ -2,7 +2,7 @@
 <!--
     Created By    : Robert Heller
     Created       : Mon May 18 09:42:34 2015
-    Last Modified : <150523.1706>
+    Last Modified : <150526.0817>
 
     Description	
     
@@ -40,21 +40,21 @@
     <tstamp/>
     <!-- Create the build directory structure used by compile -->
     <mkdir dir="${build}"/>
-    <unjar src="/dvdisos/aws-java-sdk-1.7.13/lib/aws-java-sdk-1.7.13.jar"
+    <unjar src="${basedir}/../assets/aws-java-sdk-1.7.13/lib/aws-java-sdk-1.7.13.jar"
       dest="${build}"/>
-    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/commons-logging-1.1.1/commons-logging-1.1.1.jar" 
+    <unjar src="${basedir}/../assets/aws-java-sdk-1.7.13/third-party/commons-logging-1.1.1/commons-logging-1.1.1.jar" 
       dest="${build}"/>
-    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/httpcomponents-client-4.2.3/httpclient-4.2.3.jar" 
+    <unjar src="${basedir}/../assets/aws-java-sdk-1.7.13/third-party/httpcomponents-client-4.2.3/httpclient-4.2.3.jar" 
       dest="${build}"/>
-    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/httpcomponents-client-4.2.3/httpcore-4.2.jar" 
+    <unjar src="${basedir}/../assets/aws-java-sdk-1.7.13/third-party/httpcomponents-client-4.2.3/httpcore-4.2.jar" 
       dest="${build}"/>
-    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/jackson-core-2.1/jackson-core-2.1.1.jar"
+    <unjar src="${basedir}/../assets/aws-java-sdk-1.7.13/third-party/jackson-core-2.1/jackson-core-2.1.1.jar"
       dest="${build}"/>
-    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/jackson-annotations-2.1/jackson-annotations-2.1.1.jar"
+    <unjar src="${basedir}/../assets/aws-java-sdk-1.7.13/third-party/jackson-annotations-2.1/jackson-annotations-2.1.1.jar"
       dest="${build}"/>
-    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/jackson-databind-2.1/jackson-databind-2.1.1.jar" 
+    <unjar src="${basedir}/../assets/aws-java-sdk-1.7.13/third-party/jackson-databind-2.1/jackson-databind-2.1.1.jar" 
       dest="${build}"/>
-    <unjar src="/dvdisos/aws-java-sdk-1.7.13/third-party/joda-time-2.2/joda-time-2.2.jar" 
+    <unjar src="${basedir}/../assets/aws-java-sdk-1.7.13/third-party/joda-time-2.2/joda-time-2.2.jar" 
       dest="${build}"/>
     <delete dir="${build}/META-INF" />
   </target>
