@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150526.1708>
+ *  Last Modified : <150526.1926>
  *
  *  Description	
  *
@@ -121,6 +121,47 @@ public class GlacierCommand extends BackupVault {
         }
     }
     private void showvaults(String args[]) throws Exception {
+        Element vaultsnode = getvaultnode();
+        NodeList vaults = vaultsnode.getElementsByTagName("vault");
+        for (int i=0; i < vaults.getLength(); i++) {
+            Element vault = (Element) vaults.item(i);
+            System.out.println(vault.getAttribute("name")+":");
+            System.out.println("  Date Created: "+vault.getAttribute("date"));
+            NodeList archives = vault.getElementsByTagName("archive");
+            System.out.println("  Number of archives: "+archives.getLength());
+            long totalsize = 0;
+            for (int j=0; j < archives.getLength();j++) {
+                Element a = (Element) archives.item(i);
+                long size = Long.parseLong(a.getAttribute("size"),10);
+                totalsize += size;
+            }
+            System.out.print("  Total size: "+Humansize(totalsize)+" byte");
+            if (totalsize != 1) {
+                System.out.println("s.");
+            } else {
+                System.out.println(".");
+            }
+            System.out.println("");
+        }
+    }
+    private String Humansize(long s) {
+        Formatter f = new Formatter();
+        if (s < 1024) {
+            f.format("%d",s);
+            return f.toString();
+        } else if (s < (1024*1024)) {
+            f.format("%5.1fK",(double)s / 1024.0);
+            return f.toString();
+        } else if (s < (1024*1024*1024)) {
+            f.format("%5.1M",(double)s / (1024.0*1024.0));
+            return f.toString();
+        } else if (s < (1024*1024*1024*1024)) {
+            f.format("%5.1G",(double)s / (1024.0*1024.0*1024.0));
+            return f.toString();
+        } else {
+            f.format("%5.1T",(double)s / (1024.0*1024.0*1024.0*1024.0));
+            return f.toString();
+        }
     }
     private void showarchives(String args[]) throws Exception {
     }
