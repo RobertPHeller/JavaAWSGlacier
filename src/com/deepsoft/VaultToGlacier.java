@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 14:00:27 2015
- *  Last Modified : <150524.1521>
+ *  Last Modified : <150526.1530>
  *
  *  Description	
  *
@@ -93,7 +93,8 @@ public class VaultToGlacier extends BackupVault {
                 String vlab = match.group(1);
                 Element v = findvaultbyname(vlab);
                 if (v == null) {
-                    v = CreateNewVault(vlab);
+                    System.out.println("Creating new vault: "+vlab);
+                    /*v = CreateNewVault(vlab);*/
                     if (v != null) {
                         System.out.println("Created vault: "+vlab);
                         savedb(GlacierVaultDB_File);
@@ -109,7 +110,8 @@ public class VaultToGlacier extends BackupVault {
                     File aFile = new File(afile);
                     Element a = findarchivebydescr(v,aFile.getName());
                     if (a == null) {
-                        a = UploadArchive(vlab,afile);
+                        System.out.println("Uploading Archive: "+vlab+"/"+afile);
+                        /*a = UploadArchive(vlab,afile);*/
                         if (a != null) {
                             System.out.println("Archive uploaded: "+vlab+": "+aFile.getName());
                             savedb(GlacierVaultDB_File);
@@ -127,7 +129,8 @@ public class VaultToGlacier extends BackupVault {
                     dow < Calendar.SUNDAY) {
                     for (i = 0; i < uploadedArchivesCount; i++) {
                         File file = new File(uploadedArchives[i]);
-                        file.delete();
+                        /*file.delete();*/
+                        System.out.println("Archive deleted: "+uploadedArchives[i]);
                     }
                 }
             }

@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 09:37:29 2015
- *  Last Modified : <150524.1810>
+ *  Last Modified : <150526.1519>
  *
  *  Description	
  *
@@ -69,14 +69,21 @@ public class TapeListing {
         Formatter f = new Formatter();
         f.format("%04d%02d%02d%02d%02d%02d",y,m,d,H,M,S);
         timestamp = f.toString();
+        //System.err.println("*** TapeListing(): timestamp = "+timestamp);
         host = _host;
+        //System.err.println("*** TapeListing(): host = "+host);
         disk = _disk;
+        //System.err.println("*** TapeListing(): disk = "+disk);
         Matcher labelmatch = VaultPattern.matcher(tapelabel);
         vaulted = labelmatch.matches();
+        //System.err.println("*** TapeListing(): vaulted = "+vaulted);
         String hd = host+":"+disk;
+        //System.err.println("*** TapeListing(): hd = "+hd);
         if (host_disk.containsKey(hd)) {
             String ts = host_disk.get(hd);
+            //System.err.println("*** TapeListing(): ts = "+ts);
             int comp = timestamp.compareTo(ts);
+            //System.err.println("*** TapeListing(): comp = "+comp);
             if (comp > 0) {
                 LinkedList<TapeListing> tps = tapes.get(ts);
                 LinkedList<TapeListing> newl = new LinkedList<TapeListing>();
@@ -103,6 +110,8 @@ public class TapeListing {
                 newl.add(t);
             }
             tapes.put(timestamp,newl);
+        } else {
+            tapes.put(timestamp,new LinkedList<TapeListing>());
         }
         tapes.get(timestamp).add(this);
     }
@@ -120,22 +129,37 @@ public class TapeListing {
         BufferedReader in = new BufferedReader(isr);
         String line;
         while ((line = in.readLine()) != null) {
+            //System.err.println("*** processfind(): line is '"+line+"'");
             Matcher match = LinePattern.matcher(line);
             if (match.matches()) {
                 String y = match.group(1);
+                //System.err.println("*** processfind(): y = "+y);
                 String m = match.group(2);
+                //System.err.println("*** processfind(): m = "+m);
                 String d = match.group(3);
+                //System.err.println("*** processfind(): d = "+d);
                 String H = match.group(4);
+                //System.err.println("*** processfind(): H = "+H);
                 String M = match.group(5);
+                //System.err.println("*** processfind(): M = "+M);
                 String S = match.group(6);
+                //System.err.println("*** processfind(): S = "+S);
                 String _host = match.group(7);
+                //System.err.println("*** processfind(): _host = "+_host);
                 String _disk = match.group(8);
+                //System.err.println("*** processfind(): _disk = "+_disk);
                 String level = match.group(9);
+                //System.err.println("*** processfind(): level = "+level);
                 String tapelabel = match.group(10);
+                //System.err.println("*** processfind(): tapelabel = "+tapelabel);
                 String file = match.group(11);
+                //System.err.println("*** processfind(): file = "+file);
                 String part = match.group(12);
+                //System.err.println("*** processfind(): part = "+part);
                 String ofparts = match.group(13);
+                //System.err.println("*** processfind(): ofparts = "+ofparts);
                 String status = match.group(14);
+                //System.err.println("*** processfind(): status = "+status);
                 if (Integer.parseInt(level) > 0) {continue;}
                 if (status.compareTo("OK") != 0) {continue;}
                 TapeListing t = new TapeListing(y,m,d,H,M,S,_host,_disk,tapelabel);
@@ -191,8 +215,11 @@ public class TapeListing {
         return vts;
     }
     public static void main(String args[]) throws IOException, InterruptedException {
+        //System.err.println("*** Creating a process builder...");
         ProcessBuilder findproc = new ProcessBuilder("/usr/sbin/amadmin","wendellfreelibrary","find","--sort","LD");
+        //System.err.println("*** Creating a process...");
         Process p = findproc.start();
+        //System.err.println("*** Process started");
         InputStream is = p.getInputStream();
         TapeListing.processfind(is);
         is.close();
@@ -205,6 +232,7 @@ public class TapeListing {
             ListIterator<String> iter = tss.listIterator(0);
             while (iter.hasNext()) {
                 String ts = (String) iter.next();
+                System.out.println("/usr/sbin/amvault wendellfreelibrary "+ts+" vault_changer wendellfreelibrary-vault-%%%");
                 ProcessBuilder vaultproc = new ProcessBuilder("/usr/sbin/amvault","wendellfreelibrary",ts,"vault_changer","wendellfreelibrary-vault-%%%");
                 p = vaultproc.start();
                 is = p.getInputStream();
