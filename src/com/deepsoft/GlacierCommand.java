@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150526.2029>
+ *  Last Modified : <150527.0921>
  *
  *  Description	
  *
@@ -36,6 +36,15 @@ import java.util.*;
 import java.util.regex.*;
 import java.lang.*;
 import org.w3c.dom.*;
+import com.amazonaws.services.glacier.model.ListPartsResult;
+import com.amazonaws.services.glacier.model.ListMultipartUploadsResult;
+import com.amazonaws.services.glacier.model.PartListElement;
+import com.amazonaws.services.glacier.model.UploadListElement;
+import com.amazonaws.services.glacier.model.InitiateJobResult;
+import com.amazonaws.services.glacier.model.ListJobsResult;
+import com.amazonaws.services.glacier.model.GlacierJobDescription;
+import com.amazonaws.services.glacier.model.DescribeJobResult;
+import com.amazonaws.services.glacier.model.InventoryRetrievalJobDescription;
 import com.deepsoft.*;
 
 public class GlacierCommand extends BackupVault {
@@ -221,14 +230,221 @@ public class GlacierCommand extends BackupVault {
         System.out.println("");
     }
     private void showjobs(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vault = args[0];
+        ListJobsResult ljResult = GetJobList(vault,copyTail(args,1));
+        java.util.List<GlacierJobDescription> jobList = ljResult.getJobList();
+        if (jobList != null) {
+            int index = 0;
+            Iterator itr = jobList.iterator();
+            while (itr.hasNext()) {
+                GlacierJobDescription job = (GlacierJobDescription)itr.next();
+                index++;
+                String jobId = job.getJobId();
+                String jobDescription = job.getJobDescription();
+                if (jobDescription == null) jobDescription = jobId;
+                String action = job.getAction();
+                if (action == null) action = "";
+                String archiveId = job.getArchiveId();
+                if (archiveId == null) archiveId = "";
+                String vaultARN = job.getVaultARN();
+                String creationDate = job.getCreationDate();
+                Boolean completed = job.getCompleted();
+                String statusCode = job.getStatusCode();
+                if (statusCode == null) statusCode = "";
+                String statusMessage = job.getStatusMessage();
+                if (statusMessage == null) statusMessage = "";
+                long archiveSizeInBytes = job.getArchiveSizeInBytes();
+                long inventorySizeInBytes = job.getInventorySizeInBytes();
+                String sNSTopic = job.getSNSTopic();
+                if (sNSTopic == null) sNSTopic = "";
+                String completionDate = job.getCompletionDate();
+                if (completionDate == null) completionDate = "";
+                String sHA256TreeHash = job.getSHA256TreeHash();
+                if (sHA256TreeHash == null) sHA256TreeHash = "";
+                String archiveSHA256TreeHash = job.getArchiveSHA256TreeHash();
+                if (archiveSHA256TreeHash == null) archiveSHA256TreeHash = "";
+                String retrievalByteRange = job.getRetrievalByteRange();
+                if (retrievalByteRange == null) retrievalByteRange = "";
+                InventoryRetrievalJobDescription inventoryRetrievalParameters = job.getInventoryRetrievalParameters();
+                System.out.printf("%2d: %s\n",index,jobDescription);
+                System.out.printf("    Action: %s\n",action);
+                System.out.printf("    ArchiveId: %s\n",archiveId);
+                System.out.printf("    ArchiveSHA256TreeHash: %s\n",archiveSHA256TreeHash);
+                System.out.printf("    ArchiveSizeInBytes: %s\n",Humansize(archiveSizeInBytes));
+                System.out.printf("    Completed: %s\n",(completed?"Yes":"No"));
+                System.out.printf("    CompletionDate: %s\n",completionDate);
+                System.out.printf("    CreationDate: %s\n",creationDate);
+                if (inventoryRetrievalParameters == null) {
+                    System.out.println("    InventoryRetrievalParameters: null");
+                } else {
+                    System.out.println("    InventoryRetrievalParameters: ");
+                    String format = inventoryRetrievalParameters.getFormat();
+                    if (format == null) format = "";
+                    String startDate = inventoryRetrievalParameters.getStartDate();
+                    if (startDate == null) startDate = "";
+                    String endDate = inventoryRetrievalParameters.getEndDate();
+                    if (endDate == null) endDate = "";
+                    String limit = inventoryRetrievalParameters.getLimit();
+                    if (limit == null) limit = "";
+                    String marker = inventoryRetrievalParameters.getMarker();
+                    if (marker == null) marker = "";
+                    System.out.printf("        StartDate: %s\n",startDate);
+                    System.out.printf("        EndDate: %s\n",endDate);
+                    System.out.printf("        Format: %s\n",format);
+                    System.out.printf("        Limit: %s\n",limit);
+                    System.out.printf("        Marker: %s\n",marker);
+                }
+                System.out.printf("    InventorySizeInBytes: %s\n",Humansize(inventorySizeInBytes));
+                System.out.printf("    JobId: %s\n",jobId);
+                System.out.printf("    RetrievalByteRange: %s\n",retrievalByteRange);
+                System.out.printf("    SHA256TreeHash: %s\n",sHA256TreeHash);
+                System.out.printf("    SNSTopic: %s\n",sNSTopic);
+                System.out.printf("    StatusCode: %s\n",statusCode);
+                System.out.printf("    StatusMessage: %s\n",statusMessage);
+                System.out.printf("    VaultARN: %s\n",vaultARN);
+            }
+            if (index > 0) System.out.println("");
+            if (index == 1) {
+                System.out.printf("%d job.\n",index);
+            } else {
+                System.out.printf("%d jobs.\n",index);
+            }
+        }
     }
     private void showjob(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vaultName = args[0];
+        if (args.length < 2) {
+            throw new Exception("Missing job id");
+        }
+        String jobId = args[1];
+        DescribeJobResult job = GetJobDescription(vaultName,jobId);
+        //String jobId = job.getJobId();
+        String jobDescription = job.getJobDescription();
+        if (jobDescription == null) jobDescription = jobId;
+        String action = job.getAction();
+        if (action == null) action = "";
+        String archiveId = job.getArchiveId();
+        if (archiveId == null) archiveId = "";
+        String vaultARN = job.getVaultARN();
+        String creationDate = job.getCreationDate();
+        Boolean completed = job.getCompleted();
+        String statusCode = job.getStatusCode();
+        if (statusCode == null) statusCode = "";
+        String statusMessage = job.getStatusMessage();
+        if (statusMessage == null) statusMessage = "";
+        long archiveSizeInBytes = job.getArchiveSizeInBytes();
+        long inventorySizeInBytes = job.getInventorySizeInBytes();
+        String sNSTopic = job.getSNSTopic();
+        if (sNSTopic == null) sNSTopic = "";
+        String completionDate = job.getCompletionDate();
+        if (completionDate == null) completionDate = "";
+        String sHA256TreeHash = job.getSHA256TreeHash();
+        if (sHA256TreeHash == null) sHA256TreeHash = "";
+        String archiveSHA256TreeHash = job.getArchiveSHA256TreeHash();
+        if (archiveSHA256TreeHash == null) archiveSHA256TreeHash = "";
+        String retrievalByteRange = job.getRetrievalByteRange();
+        if (retrievalByteRange == null) retrievalByteRange = "";
+        InventoryRetrievalJobDescription inventoryRetrievalParameters = job.getInventoryRetrievalParameters();
+        System.out.printf("JobDescription: %s\n",jobDescription);
+        System.out.printf("Action: %s\n",action);
+        System.out.printf("ArchiveId: %s\n",archiveId);
+        System.out.printf("ArchiveSHA256TreeHash: %s\n",archiveSHA256TreeHash);
+        System.out.printf("ArchiveSizeInBytes: %s\n",Humansize(archiveSizeInBytes));
+        System.out.printf("Completed: %s\n",(completed?"Yes":"No"));
+        System.out.printf("CompletionDate: %s\n",completionDate);
+        System.out.printf("CreationDate: %s\n",creationDate);
+        if (inventoryRetrievalParameters == null) {
+            System.out.println("InventoryRetrievalParameters: null");
+        } else {
+            System.out.println("InventoryRetrievalParameters: ");
+            String format = inventoryRetrievalParameters.getFormat();
+            if (format == null) format = "";
+            String startDate = inventoryRetrievalParameters.getStartDate();
+            if (startDate == null) startDate = "";
+            String endDate = inventoryRetrievalParameters.getEndDate();
+            if (endDate == null) endDate = "";
+            String limit = inventoryRetrievalParameters.getLimit();
+            if (limit == null) limit = "";
+            String marker = inventoryRetrievalParameters.getMarker();
+            if (marker == null) marker = "";
+            System.out.printf("    StartDate: %s\n",startDate);
+            System.out.printf("    EndDate: %s\n",endDate);
+            System.out.printf("    Format: %s\n",format);
+            System.out.printf("    Limit: %s\n",limit);
+            System.out.printf("    Marker: %s\n",marker);
+        }
+        System.out.printf("InventorySizeInBytes: %s\n",Humansize(inventorySizeInBytes));
+        System.out.printf("JobId: %s\n",jobId);
+        System.out.printf("RetrievalByteRange: %s\n",retrievalByteRange);
+        System.out.printf("SHA256TreeHash: %s\n",sHA256TreeHash);
+        System.out.printf("SNSTopic: %s\n",sNSTopic);
+        System.out.printf("StatusCode: %s\n",statusCode);
+        System.out.printf("StatusMessage: %s\n",statusMessage);
+        System.out.printf("VaultARN: %s\n",vaultARN);
     }
     private void showuploads(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vault = args[0];
+        ListMultipartUploadsResult uploads = ListMultiPartUploads(vault);
+        java.util.List<UploadListElement> uploadsList = uploads.getUploadsList();
+        int index = 0;
+        if (uploadsList != null) {
+            Iterator itr = uploadsList.iterator();
+            while (itr.hasNext()) {
+                index++;
+                UploadListElement upload = (UploadListElement)itr.next();
+                String multipartUploadId = upload.getMultipartUploadId();
+                if (multipartUploadId == null) multipartUploadId = "";
+                String vaultARN = upload.getVaultARN();
+                if (vaultARN == null) vaultARN = "";
+                String archiveDescription = upload.getArchiveDescription();
+                if (archiveDescription == null) archiveDescription = "";
+                Long partSizeInBytes = upload.getPartSizeInBytes();
+                String creationDate = upload.getCreationDate();
+                if (creationDate == null) creationDate = "";
+                System.out.printf("%2d: %s\n",index,archiveDescription);
+                System.out.printf("    CreationDate: %s\n",creationDate);
+                System.out.printf("    PartSizeInBytes: %s\n",Humansize(partSizeInBytes));
+                System.out.printf("    MultipartUploadId: %s\n",multipartUploadId);
+                System.out.printf("    VaultARN: %s\n",vaultARN);
+            }
+        }
+        if (index > 0) System.out.println("");
+        if (index == 1) {
+            System.out.printf("%d upload.\n",index);
+        } else {
+            System.out.printf("%d uploads.\n",index);
+        }
     }
     private void showparts(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vaultName = args[0];
+        if (args.length < 2) {
+            throw new Exception("Missing upload id");
+        }
+        String uploadId = args[1];
+        ListPartsResult parts = ListParts(vaultName,uploadId);
     }
     private void abortmulti(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vaultName = args[0];
+        if (args.length < 2) {
+            throw new Exception("Missing upload id");
+        }
+        String uploadId = args[1];
+        AbortMultipartUpload(vaultName,uploadId);
     }
     private void getarchive(String args[]) throws Exception {
     }

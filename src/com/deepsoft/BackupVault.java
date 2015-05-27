@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 23 14:21:22 2015
- *  Last Modified : <150524.0905>
+ *  Last Modified : <150527.0854>
  *
  *  Description	
  *
@@ -159,7 +159,7 @@ class BackupVault extends VaultXMLDB {
             throw new IllegalArgumentException("Expected true/false/yes/no/1/0, got "+boolstring);
         }
     }
-    public ListJobsResult GetJobList(String vaultName, String... args) throws Exception {
+    public ListJobsResult GetJobList(String vaultName, String[] args) throws Exception {
         Element vnode = findvaultbyname(vaultName);
         if (vnode == null) {
             throw new Exception("No such vault: "+vaultName);
