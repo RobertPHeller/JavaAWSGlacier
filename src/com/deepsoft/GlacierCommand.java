@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150527.0921>
+ *  Last Modified : <150527.0955>
  *
  *  Description	
  *
@@ -434,6 +434,34 @@ public class GlacierCommand extends BackupVault {
         }
         String uploadId = args[1];
         ListPartsResult parts = ListParts(vaultName,uploadId);
+        System.out.printf("ArchiveDescription: %s\n",parts.getArchiveDescription());
+        System.out.printf("CreationDate: %s\n",parts.getCreationDate());
+        System.out.printf("MultipartUploadId: %s\n",parts.getMultipartUploadId());
+        System.out.printf("PartSizeInBytes: %s\n",Humansize(parts.getPartSizeInBytes()));
+        System.out.printf("VaultARN: %s\n",parts.getVaultARN());
+        java.util.List<PartListElement> partlist = parts.getParts();
+        if (partlist == null) {
+            System.out.println("Parts: null");
+        } else {
+            System.out.println("Parts:");
+            int index = 0;
+            Iterator itr = partlist.iterator();
+            while (itr.hasNext()) {
+                index++;
+                PartListElement part = (PartListElement)itr.next();
+                String range = part.getRangeInBytes();
+                String treeHash = part.getSHA256TreeHash();
+                System.out.printf("    %2d: \n",index);
+                System.out.printf("    RangeInBytes: %s\n",range);
+                System.out.printf("    SHA256TreeHash: %s\n",treeHash);
+            }
+            if (index > 0) System.out.println("");
+            if (index == 1) {
+                System.out.printf("%d part.\n",index);
+            } else {
+                System.out.printf("%d parts.\n",index);
+            }
+        }
     }
     private void abortmulti(String args[]) throws Exception {
         if (args.length < 1) {
@@ -447,10 +475,36 @@ public class GlacierCommand extends BackupVault {
         AbortMultipartUpload(vaultName,uploadId);
     }
     private void getarchive(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vaultName = args[0];
+        if (args.length < 2) {
+            throw new Exception("Missing archive name");
+        }
+        String archive = args[1];
+        String jobId = InitiateRetrieveArchiveJob(vaultName,archive,SNSTopic);
+        System.out.printf("Job created, job id is %s\n",jobId);
     }
     private void deletevault(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vault = args[0];
+        String response = super.deletevault(vault);
+        if (response != null && response != "") savedb(GlacierVaultDB_File);
     }
     private void deletearchive(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vault = args[0];
+        if (args.length < 2) {
+            throw new Exception("Missing archive name");
+        }
+        String archive = args[1];
+        String response = super.deletearchive(vault,archive);
+        if (response != null && response != "") savedb(GlacierVaultDB_File);
     }
     public static void main(String args[]) throws Exception {
         String dbfile = "/var/log/amanda/wendellfreelibrary/glacier.xml";
