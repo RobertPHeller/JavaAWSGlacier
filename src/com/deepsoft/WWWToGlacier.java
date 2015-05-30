@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 30 08:54:33 2015
- *  Last Modified : <150530.0957>
+ *  Last Modified : <150530.0959>
  *
  *  Description	
  *
@@ -161,11 +161,6 @@ public class WWWToGlacier extends BackupVault {
         if (v == null) {return;}
     }
 }
-        
-        
-        
-        
-        
         
         
           
