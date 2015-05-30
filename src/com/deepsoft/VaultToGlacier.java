@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 14:00:27 2015
- *  Last Modified : <150527.0805>
+ *  Last Modified : <150530.0808>
  *
  *  Description	
  *
@@ -62,10 +62,15 @@ public class VaultToGlacier extends BackupVault {
         return (calendar.get(Calendar.HOUR_OF_DAY) >= 8);
     }
     private boolean ArrayEQ(String a[], String b[]) {
+        System.err.printf("*** VaultToGlacier.ArrayEQ: a.length = %d, b.length = %d\n",a.length,b.length);
         if (a.length != b.length) {
             return false;
         } else {
             for (int i=0; i < a.length; i++) {
+                try {
+                    System.err.printf("*** VaultToGlacier.ArrayEQ: a[%d] = %s, b[%d] = %s\n",i,a[i],i,b[i]);
+                } catch (Exception e) {
+                }
                 if (a[i] == null && b[i] != null) return false;
                 if (b[i] == null && a[i] != null) return false;
                 if (a[i] != null && b[i] != null &&
@@ -76,18 +81,23 @@ public class VaultToGlacier extends BackupVault {
     }
     private class LabelFileFilter implements FilenameFilter {
         public boolean accept(File dir, String name) {
-            return name.matches("^00000\\.wendellfreelibrary-vault-.+$");
+            System.err.printf("*** VaultToGlacier.LabelFileFilter.accept(%s,%s)\n",dir.toString(),name);
+            boolean m = name.matches("^00000\\.wendellfreelibrary-vault-.+$");
+            System.err.printf("*** VaultToGlacier.LabelFileFilter.accept(): m = %s\n",(m?"true":"false"));
+            return m;
         }
     }
     public void RsyncToTheGlacier() throws Exception {
         for (int i=1; i <= 30; i++) {
-            if (after8am()) {break;}
+            /*if (after8am()) {break;}*/
             Formatter f = new Formatter();
             f.format("slot%d",i);
             File slotdir = new File("/backupdisk/wendellfreelibrary_vault/slots",f.toString());
             String labels[] = slotdir.list(new LabelFileFilter());
+            System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): labels.length = %d\n",labels.length);
             if (labels.length < 1) {continue;}
             String label = labels[0];
+            System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): label = %s\n",label);
             Matcher match = LabelPattern.matcher(label);
             if (match.matches()) {
                 String vlab = match.group(1);
@@ -106,7 +116,7 @@ public class VaultToGlacier extends BackupVault {
                 String uploadedArchives[] = new String[allArchives.length];
                 int uploadedArchivesCount = 0;
                 for (String afile: allArchives) {
-                    if (after8am()) {break;}
+                    /*if (after8am()) {break;}*/
                     File aFile = new File(afile);
                     Element a = findarchivebydescr(v,aFile.getName());
                     if (a == null) {
@@ -123,6 +133,7 @@ public class VaultToGlacier extends BackupVault {
                 }
                 Calendar calendar = new GregorianCalendar();
                 int dow = calendar.get(Calendar.DAY_OF_WEEK);
+                System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): allArchives.length = %d, uploadedArchivesCount = %d\n",allArchives.length,uploadedArchivesCount);
                 if (allArchives.length == uploadedArchivesCount &&
                     ArrayEQ(allArchives,uploadedArchives) &&
                     dow > Calendar.WEDNESDAY &&
