@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <150524.1813>
+ *  Last Modified : <150527.1339>
  *
  *  Description	
  *
@@ -130,6 +130,7 @@ public class FlushOldVaults extends BackupVault {
                     deletevault(tape);
                     System.out.println("Vault "+tape+" deleted from the Glacier");
                 } catch (Exception e) {
+                    System.err.println("Exception deleting vault: "+e.getMessage());
                 }
             }
         }
@@ -167,6 +168,7 @@ public class FlushOldVaults extends BackupVault {
                     deletearchive(vault.getAttribute("name"),descr);
                     System.out.println("Archive "+vault.getAttribute("name")+"/"+descr+" deleted from the Glacier");
                 } catch (Exception e) {
+                    System.err.println("Error deleting Archive "+vault.getAttribute("name")+"/"+descr+": "+e.getMessage());
                     deletetape = false;
                 }
             }
@@ -175,7 +177,7 @@ public class FlushOldVaults extends BackupVault {
                     amrmtape(tape);
                     System.out.println(tape+" deleted from the tape catalog");
                 } catch (Exception e) {
-                    System.err.println(e.getMessage());
+                    System.err.println("Error deleting tape "+tape+": "+e.getMessage());
                 }
             }
             savedb(GlacierVaultDB_File);

@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150527.0955>
+ *  Last Modified : <150527.1407>
  *
  *  Description	
  *
@@ -140,7 +140,7 @@ public class GlacierCommand extends BackupVault {
             System.out.println("  Number of archives: "+archives.getLength());
             long totalsize = 0;
             for (int j=0; j < archives.getLength();j++) {
-                Element a = (Element) archives.item(i);
+                Element a = (Element) archives.item(j);
                 NodeList sizes = a.getElementsByTagName("size");
                 long size = 0;
                 if (sizes != null && sizes.getLength() > 0) {
@@ -148,6 +148,7 @@ public class GlacierCommand extends BackupVault {
                     size = Long.parseLong(sizeelt.getTextContent());
                 }
                 totalsize += size;
+                //System.err.printf("*** showvaults(): totalsize = %d, size = %d\n",totalsize,size);
             }
             System.out.print("  Total size: "+Humansize(totalsize)+" byte");
             if (totalsize != 1) {
@@ -158,22 +159,31 @@ public class GlacierCommand extends BackupVault {
             System.out.println("");
         }
     }
+    private final long oneK = 1024;
+    private final double oneKD = (double) oneK;
+    private final long oneM = 1024*1024;
+    private final double oneMD = (double) oneM;
+    private final long oneG = 1024*1024*1024;
+    private final double oneGD = (double) oneG;
+    private final long oneT = oneM*oneM;
+    private final double oneTD = (double) oneT;
     private String Humansize(long s) {
+        //System.err.printf("*** GlacierCommand.Humansize(%d)\n",s);
         Formatter f = new Formatter();
-        if (s < 1024) {
+        if (s < oneK) {
             f.format("%d",s);
             return f.toString();
-        } else if (s < (1024*1024)) {
-            f.format("%5.1fK",(double)s / 1024.0);
+        } else if (s < oneM) {
+            f.format("%5.1fK",(double)s / oneKD);
             return f.toString();
-        } else if (s < (1024*1024*1024)) {
-            f.format("%5.1fM",(double)s / (1024.0*1024.0));
+        } else if (s < oneG) {
+            f.format("%5.1fM",(double)s / oneMD);
             return f.toString();
-        } else if (s < (1024*1024*1024*1024)) {
-            f.format("%5.1fG",(double)s / (1024.0*1024.0*1024.0));
+        } else if (s < oneT) {
+            f.format("%5.1fG",(double)s / oneGD);
             return f.toString();
         } else {
-            f.format("%5.1fT",(double)s / (1024.0*1024.0*1024.0*1024.0));
+            f.format("%5.1fT",(double)s / oneTD);
             return f.toString();
         }
     }
