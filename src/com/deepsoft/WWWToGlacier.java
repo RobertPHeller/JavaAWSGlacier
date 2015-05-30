@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 30 08:54:33 2015
- *  Last Modified : <150530.0942>
+ *  Last Modified : <150530.0957>
  *
  *  Description	
  *
@@ -47,7 +47,7 @@ import java.io.*;
 import java.util.*;
 import java.util.regex.*;
 import java.lang.*;
-import java.text.SimpleDateFormat;
+import java.text.*;
 import org.w3c.dom.*;
 import com.deepsoft.*;
 
@@ -59,14 +59,14 @@ public class WWWToGlacier extends BackupVault {
     private static final String WWWIndexDir = "/var/lib/Glacier/WWWBackups/Indexes";
     private static final String WWWRoot = "/var/www";
     private static final String TAR = "/bin/tar";
-    private Strings[] backupnames(String backupdirname) {
+    private String[] backupnames(String backupdirname) {
         File backupdir = new File(backupdirname);
         String chdir = backupdir.getParent();
         String backupfile = backupdir.getName();
         String archivename = backupfile;
         SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
-        StringBuffer temp;
-        df.format(new Date(),temp);
+        StringBuffer temp = new StringBuffer();
+        df.format(new Date(),temp,new FieldPosition(0));
         String backupdate = temp.toString();
         File tarfileF = new File(WWWBackupDir,archivename+"_"+backupdate+".tar.gz");
         String tarfile = tarfileF.getPath();
@@ -77,7 +77,7 @@ public class WWWToGlacier extends BackupVault {
         if (!excludefileF.canRead()) {
             excludefile = "";
         }
-        new String result[] = new String[7];
+        String result[] = new String[7];
         result[0] = chdir;
         result[1] = backupfile;
         result[2] = archivename;
@@ -87,7 +87,7 @@ public class WWWToGlacier extends BackupVault {
         result[6] = excludefile;
         return result;
     }
-    private String[] dobackup (String dir) {
+    private String[] dobackup (String dir) throws Exception {
         String names[] = backupnames(dir);
         String chdir = names[0];
         String backupfile = names[1];
@@ -98,7 +98,7 @@ public class WWWToGlacier extends BackupVault {
         String excludefile = names[6];
         String tarcmd[] = null;
         if (excludefile.compareTo("") == 0) {
-            tarcmd[] = new String[9];
+            tarcmd = new String[9];
             tarcmd[0] = TAR;
             tarcmd[1] = "czvf";
             tarcmd[2] = tarfile;
@@ -109,7 +109,7 @@ public class WWWToGlacier extends BackupVault {
             tarcmd[7] = chdir;
             tarcmd[8] = backupfile;
         } else {
-            tarcmd[] = new String[11];
+            tarcmd = new String[11];
             tarcmd[0] = TAR;
             tarcmd[1] = "czvf";
             tarcmd[2] = tarfile;
@@ -122,10 +122,11 @@ public class WWWToGlacier extends BackupVault {
             tarcmd[9] = "--exclude-from";
             tarcmd[10] = excludefile;
         }
-        Process tarProc = getRuntime.exec(tarcmd);
+        Process tarProc = Runtime.getRuntime().exec(tarcmd);
         InputStream pipeIS = tarProc.getInputStream();
         BufferedReader pipefp = new BufferedReader(
                   new InputStreamReader(pipeIS));
+        String line = null;
         while ((line = pipefp.readLine()) != null) {
             System.out.println(line);
         }
@@ -144,7 +145,7 @@ public class WWWToGlacier extends BackupVault {
     public WWWToGlacier() throws Exception {
         super(GlacierVaultDB_File);
     }
-    private static final BackupDirs[] = new String[]{"/var/www/deepsoft",
+    private static final String BackupDirs[] = new String[]{"/var/www/deepsoft",
               "/var/www/deepwoods-repo","/var/www/hellerkin",
               "/var/www/wendellfullmoon","/var/www/library","/var/www/world"};
     public void RsyncToTheGlacier () throws Exception {
@@ -158,7 +159,8 @@ public class WWWToGlacier extends BackupVault {
             }
         }
         if (v == null) {return;}
-        
+    }
+}
         
         
         
