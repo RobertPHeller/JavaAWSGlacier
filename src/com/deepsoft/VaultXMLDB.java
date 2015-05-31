@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 23 11:30:46 2015
- *  Last Modified : <150524.1806>
+ *  Last Modified : <150530.1245>
  *
  *  Description	
  *
@@ -224,6 +224,12 @@ class VaultXMLDB {
         }
         vaultnode.appendChild(newarchive);
         return newarchive;
+    }
+    public Element addTextNode(Element node,String tag,String value) {
+        Element newnode = db.createElement(tag);
+        newnode.appendChild(db.createTextNode(value));
+        node.appendChild(newnode);
+        return newnode;
     }
     public void removearchive(String vname,String aid) {
         Element vault = findvaultbyname(vname);

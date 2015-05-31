@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 30 08:54:33 2015
- *  Last Modified : <150530.1420>
+ *  Last Modified : <150530.1421>
  *
  *  Description	
  *
@@ -51,26 +51,32 @@ import java.text.*;
 import org.w3c.dom.*;
 import com.deepsoft.*;
 
-public class WWWToGlacier extends BackupVault {
+public class FTPToGlacier extends BackupVault {
     private static final File GlacierVaultDB_File = new File("/var/lib/Glacier/Common/glacier.xml");
     private static final String glacierTemp = "/home/AmazonGlacierTemp";
-    private static final String WWWVaultName = "WWWDeepsoft";
-    private static final String WWWBackupDir = "/var/lib/Glacier/WWWBackups/Archives";
-    private static final String WWWIndexDir = "/var/lib/Glacier/WWWBackups/Indexes";
-    private static final String WWWRoot = "/var/www";
+    private static final String FTPVaultName = "FTPDeepsoft";
+    private static final String FTPBackupDir = "/var/lib/Glacier/FTPBackups/Archives";
+    private static final String FTPIndexDir = "/var/lib/Glacier/FTPBackups/Indexes";
+    private static final String FTPRoot = "/var/ftp/pub";
+    private static final Pattern BackupfilenamePattern = Pattern.compile("^/var/ftp/pub/(.*)$");
     private static final String TAR = "/bin/tar";
     private String[] backupnames(String backupdirname) {
         File backupdir = new File(backupdirname);
         String chdir = backupdir.getParent();
+        Matcher match = BackupfilenamePattern.matcher(backupdirname);
         String backupfile = backupdir.getName();
+        if (match.matches()) {
+            backupfile = match.group(1);
+            backupfile.replaceAll("/","_");
+        }
         String archivename = backupfile;
         SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
         StringBuffer temp = new StringBuffer();
         df.format(new Date(),temp,new FieldPosition(0));
         String backupdate = temp.toString();
-        File tarfileF = new File(WWWBackupDir,archivename+"_"+backupdate+".tar.gz");
+        File tarfileF = new File(FTPBackupDir,archivename+"_"+backupdate+".tar.gz");
         String tarfile = tarfileF.getPath();
-        File indexfileF = new File(WWWIndexDir,archivename+"_"+backupdate);
+        File indexfileF = new File(FTPIndexDir,archivename+"_"+backupdate);
         String indexfile = indexfileF.getPath();
         File excludefileF = new File(backupdir,".exclude");
         String excludefile = excludefileF.getPath();
@@ -131,7 +137,7 @@ public class WWWToGlacier extends BackupVault {
             tarcmd[9] = excludefile;
             tarcmd[10] = backupfile;
         }
-        //System.err.println("*** WWWToGlacier.dobackup(): tarcmd is "+cmdstring(tarcmd));
+        //System.err.println("*** FTPToGlacier.dobackup(): tarcmd is "+cmdstring(tarcmd));
         Process tarProc = Runtime.getRuntime().exec(tarcmd);
         InputStream pipeIS = tarProc.getInputStream();
         BufferedReader pipefp = new BufferedReader(
@@ -152,7 +158,7 @@ public class WWWToGlacier extends BackupVault {
             return result;
         }
     }
-    public WWWToGlacier() throws Exception {
+    public FTPToGlacier() throws Exception {
         super(GlacierVaultDB_File);
     }
     private boolean after8am() {
@@ -170,12 +176,10 @@ public class WWWToGlacier extends BackupVault {
             return m;
         }
     }
-    private static final String BackupDirs[] = new String[]{"/var/www/deepsoft",
-              "/var/www/deepwoods-repo","/var/www/hellerkin",
-              "/var/www/wendellfullmoon","/var/www/library","/var/www/world"};
+    private static final String BackupDirs[] = new String[]{"/var/ftp/pub/deepwoods-repo","/var/ftp/pub/wendellfullmoon","/var/ftp/pub/wendellmass","/var/ftp/pub/deepwoods/Products/HomeLibrarian","/var/ftp/pub/deepwoods/Products/MRRSystem","/var/ftp/pub/deepwoods/Products/RolePlayingDB","/var/ftp/pub/deepwoods/Products/WebLibrarian"};
     private static final Pattern TarbasenamePattern = Pattern.compile("^(.*)\\.tar\\.gz");
     public void RsyncToTheGlacier () throws Exception {
-        String vlab = WWWVaultName;
+        String vlab = FTPVaultName;
         if (isFirstSunday()) {
             for (String dir: BackupDirs) {
                 String backupnames[] = dobackup(dir);
@@ -190,7 +194,7 @@ public class WWWToGlacier extends BackupVault {
             }
         }
         if (v == null) {return;}
-        File backupDir = new File(WWWBackupDir);
+        File backupDir = new File(FTPBackupDir);
         String tarfiles[] = backupDir.list(new AllTarFiles());
         for (String tarfilename: tarfiles) {
             if (after8am()) break;
@@ -198,7 +202,7 @@ public class WWWToGlacier extends BackupVault {
             Matcher match = TarbasenamePattern.matcher(tarfilename);
             if (match.matches()) {
                 String archivename_backupdate = match.group(1);
-                String indexfile = new File(WWWIndexDir,archivename_backupdate).getPath();
+                String indexfile = new File(FTPIndexDir,archivename_backupdate).getPath();
                 Element a = findarchivebydescr(v,tarfilename);
                 if (a == null) {
                     a = UploadArchive(vlab,tarfile.getPath());
@@ -224,8 +228,8 @@ public class WWWToGlacier extends BackupVault {
         }
     }
     public static void main(String args[]) throws Exception {
-        WWWToGlacier WWW2G = new WWWToGlacier();
-        WWW2G.RsyncToTheGlacier();
+        FTPToGlacier FTP2G = new FTPToGlacier();
+        FTP2G.RsyncToTheGlacier();
     }
 }
         
