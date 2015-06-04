@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <150527.1339>
+ *  Last Modified : <150603.1641>
  *
  *  Description	
  *
@@ -113,43 +113,55 @@ public class FlushOldVaults extends BackupVault {
         for (i=0; i < vaults.getLength(); i++) {
             Element vault = (Element) vaults.item(i);
             String tape = vault.getAttribute("name");
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): (deleting valuts) tape = %s\n",tape);
             InputStream tapelistIS = new FileInputStream(tapelist);
             InputStreamReader tapelistISR = new InputStreamReader(tapelistIS);
             BufferedReader tapelistfp = new BufferedReader(tapelistISR);
             boolean delvault = true;
             String line = null;
+            String p = "^\\d+\\s+"+tape+"\\s+.*";
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): p = '%s'\n",p);
+            Pattern tapePattern = Pattern.compile(p);
             while ((line = tapelistfp.readLine()) != null) {
-                if (line.matches("\\s"+tape+"\\s")) {
+                //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): line = '%s'\n",line);
+                Matcher match = tapePattern.matcher(line);
+                if (match.matches()) {
+                    //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): match matches '%s'\n",match.group(0));
                     delvault = false;
                     break;
                 }
             }
             tapelistIS.close();
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): delvault = %s\n",(delvault?"true":"false"));
             if (delvault) {
                 try {
-                    deletevault(tape);
-                    System.out.println("Vault "+tape+" deleted from the Glacier");
+                    System.out.println("Vault "+tape+" would have been deleted from the Glacier");
+                    //deletevault(tape);
+                    //System.out.println("Vault "+tape+" deleted from the Glacier");
                 } catch (Exception e) {
                     System.err.println("Exception deleting vault: "+e.getMessage());
                 }
             }
         }
-        savedb(GlacierVaultDB_File);
+        //savedb(GlacierVaultDB_File);
         for (i=0; i < vaults.getLength(); i++) {
             Element vault = (Element) vaults.item(i);
             Date vdate = parseVDBDate(vault.getAttribute("date"));
             if (vdate.after(stamp)) {continue;}
             String tape = vault.getAttribute("name");
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): (deleting archives) tape = %s\n",tape);
             NodeList archives = vault.getElementsByTagName("archive");
             boolean deletable = false;
-            for (i=0; i < archives.getLength(); i++) {
-                Element a = (Element) archives.item(i);
+            int j;
+            for (j=0; j < archives.getLength(); j++) {
+                Element a = (Element) archives.item(j);
                 NodeList dtag = a.getElementsByTagName("description");
                 if (dtag.getLength() > 0) {
                     Element descrele = (Element) dtag.item(0);
                     String descr = descrele.getTextContent();
-                    for (int j = 0; j < disks.length; j++) {
-                        if (descr.matches("\\."+disks[j]+"\\.0$")){
+                    for (int k = 0; k < disks.length; k++) {
+                        //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s', disks[%d] = '%s'\n",descr,k,disks[k]);
+                        if (descr.matches("^.*\\."+disks[k]+"\\.0$")){
                             deletable = true;
                             break;
                         }
@@ -157,14 +169,16 @@ public class FlushOldVaults extends BackupVault {
                 }
             }
             if (!deletable) {continue;}
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletable is true\n");
             boolean deletetape = true;
-            for (i=0; i < archives.getLength() && deletetape; i++) {
-                Element a = (Element) archives.item(i);
+            for (j=0; j < archives.getLength() && deletetape; j++) {
+                Element a = (Element) archives.item(j);
                 NodeList dtag = a.getElementsByTagName("description");
                 if (dtag.getLength() < 1) {continue;}
                 Element descrele = (Element) dtag.item(0);
                 String descr = descrele.getTextContent();
                 try {
+                    //System.out.println("Archive "+vault.getAttribute("name")+"/"+descr+" would have been deleted from the Glacier");
                     deletearchive(vault.getAttribute("name"),descr);
                     System.out.println("Archive "+vault.getAttribute("name")+"/"+descr+" deleted from the Glacier");
                 } catch (Exception e) {
@@ -174,6 +188,7 @@ public class FlushOldVaults extends BackupVault {
             }
             if (deletetape) {
                 try {
+                    //System.out.println(tape+" would have been deleted from the tape catalog");
                     amrmtape(tape);
                     System.out.println(tape+" deleted from the tape catalog");
                 } catch (Exception e) {
