@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150527.1407>
+ *  Last Modified : <150604.1609>
  *
  *  Description	
  *
@@ -64,6 +64,15 @@ public class GlacierCommand extends BackupVault {
         System.out.flush();
     }
     private void mainLoop() throws IOException {
+        String cp = System.getProperty("java.class.path");
+        String jname = new File(cp).getName();
+        Pattern p = Pattern.compile("JavaAWSGlacier-(\\d+)\\.jar");
+        Matcher m = p.matcher(jname);
+        String jdate = "unknown";
+        if (m.matches()) {
+            jdate = m.group(1);
+        }
+        System.out.printf("GlacierCommand (build %s)\n\n",jdate);
         BufferedReader in = new BufferedReader(
                   new InputStreamReader(System.in));
         String line = null;
@@ -130,10 +139,17 @@ public class GlacierCommand extends BackupVault {
         }
     }
     private void showvaults(String args[]) throws Exception {
+        String p = ".*";
+        if (args.length > 0) {
+            p = args[0]+".*";
+        }
+        Pattern vpattern = Pattern.compile(p);              
         Element vaultsnode = getvaultnode();
         NodeList vaults = vaultsnode.getElementsByTagName("vault");
         for (int i=0; i < vaults.getLength(); i++) {
             Element vault = (Element) vaults.item(i);
+            Matcher match = vpattern.matcher(vault.getAttribute("name"));
+            if (!match.matches()) continue;
             System.out.println(vault.getAttribute("name")+":");
             System.out.println("  Date Created: "+vault.getAttribute("date"));
             NodeList archives = vault.getElementsByTagName("archive");
@@ -188,51 +204,71 @@ public class GlacierCommand extends BackupVault {
         }
     }
     private void showarchives(String args[]) throws Exception {
-        if (args.length < 1) {
-            throw new Exception("Missing vault name");
+        String p = ".*";
+        if (args.length > 0) {
+            p = args[0]+".*";
         }
-        String vault = args[0];
-        Element vnode = findvaultbyname(vault);
-        if (vnode == null) {
-            throw new Exception("No such vault: "+vault);
+        Pattern vpattern = Pattern.compile(p);              
+        LinkedList<Element> vaults = findvaultsbypattern(vpattern);
+        long grandtotalsize = 0;
+        int vcount = 0;
+        ListIterator<Element> viter = vaults.listIterator(0);
+        if (!viter.hasNext()) {
+            throw new Exception("No such matching vaults: "+p);
         }
-        NodeList archives = vnode.getElementsByTagName("archive");
-        System.out.println("Vault: "+vnode.getAttribute("name")+":");
-        long totalsize = 0;
-        int index = 0;
-        for (int j=0; j < archives.getLength();j++) {
-            index++;
-            Element a = (Element) archives.item(j);
-            NodeList dtags = a.getElementsByTagName("description");
-            String descr = a.getAttribute("archiveid");
-            if (dtags != null && dtags.getLength() > 0) {
-                Element dtag = (Element) dtags.item(0);
-                descr = dtag.getTextContent();
+        while (viter.hasNext()) {
+            vcount++;
+            Element vnode = (Element) viter.next();
+            NodeList archives = vnode.getElementsByTagName("archive");
+            System.out.printf("%d) Vault: %s:\n",vcount,vnode.getAttribute("name"));
+            long totalsize = 0;
+            int index = 0;
+            for (int j=0; j < archives.getLength();j++) {
+                index++;
+                Element a = (Element) archives.item(j);
+                NodeList dtags = a.getElementsByTagName("description");
+                String descr = a.getAttribute("archiveid");
+                if (dtags != null && dtags.getLength() > 0) {
+                    Element dtag = (Element) dtags.item(0);
+                    descr = dtag.getTextContent();
+                }
+                System.out.printf("  %3d) %s:\n",index,descr);
+                long size = 0;
+                NodeList sizes = a.getElementsByTagName("size");
+                if (sizes != null && sizes.getLength() > 0) {
+                    Element sizeelt = (Element) sizes.item(0);
+                    size = Long.parseLong(sizeelt.getTextContent());
+                }
+                String sha256th = "";
+                NodeList sha256ths = a.getElementsByTagName("sha256treehash");
+                if (sha256ths != null && sha256ths.getLength() > 0) {
+                    Element sha256thelt = (Element) sha256ths.item(0);
+                    sha256th = sha256thelt.getTextContent();
+                }
+                System.out.println("    Size: "+Humansize(size));
+                System.out.println("    Tree hash: "+sha256th);
+                totalsize += size;
+                System.out.println("");
             }
-            System.out.printf("  %3d) %s:\n",index,descr);
-            long size = 0;
-            NodeList sizes = a.getElementsByTagName("size");
-            if (sizes != null && sizes.getLength() > 0) {
-                Element sizeelt = (Element) sizes.item(0);
-                size = Long.parseLong(sizeelt.getTextContent());
+            System.out.print("  Total size: "+Humansize(totalsize)+" byte");
+            if (totalsize != 1) {
+                System.out.print("s");
             }
-            String sha256th = "";
-            NodeList sha256ths = a.getElementsByTagName("sha256treehash");
-            if (sha256ths != null && sha256ths.getLength() > 0) {
-                Element sha256thelt = (Element) sha256ths.item(0);
-                sha256th = sha256thelt.getTextContent();
+            grandtotalsize += totalsize;
+            System.out.print(", in "+index+" archive");
+            if (index != 1) {
+                System.out.println("s.");
+            } else {
+                System.out.println(".");
             }
-            System.out.println("    Size: "+Humansize(size));
-            System.out.println("    Tree hash: "+sha256th);
-            totalsize += size;
             System.out.println("");
         }
-        System.out.print("  Total size: "+Humansize(totalsize)+" byte");
-        if (totalsize != 1) {
+        System.out.print("Grand Total size: "+Humansize(grandtotalsize)+" byte");
+        if (grandtotalsize != 1) {
             System.out.print("s");
         }
-        System.out.print(", in "+index+" archive");
-        if (index != 1) {
+        System.out.print(", in "+vcount+" vault");
+        if (vcount != 1) {
             System.out.println("s.");
         } else {
             System.out.println(".");

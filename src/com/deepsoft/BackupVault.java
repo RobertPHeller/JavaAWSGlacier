@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 23 14:21:22 2015
- *  Last Modified : <150527.0854>
+ *  Last Modified : <150607.1439>
  *
  *  Description	
  *
@@ -69,7 +69,7 @@ import com.deepsoft.VaultXMLDB;
 
 class BackupVault extends VaultXMLDB {
     private final SimpleDateFormat dateFormatter = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z");
-    private final int Meg256 = 256 * 1024 * 1024;
+    private final int DefaultPartsize = 256 * 1024 * 1024;
     private final String glacierTemp = "/home/AmazonGlacierTemp";
     private int tempFileindex = 1;
     private AmazonGlacierClient client;
@@ -102,10 +102,13 @@ class BackupVault extends VaultXMLDB {
         return addvault(loc,date.toString());
     }
     public Element UploadArchive (String vaultName, String archivefile) throws Exception {
+        return UploadArchive(vaultName,archivefile,DefaultPartsize);
+    }
+    public Element UploadArchive (String vaultName, String archivefile, int partsize) throws Exception {
         File archiveFile = new File(archivefile);
         AmazonGlacierArchiveOperations.UploadResult result = 
               AmazonGlacierArchiveOperations.uploadArchive(client,vaultName,
-                        archiveFile);
+                        archiveFile,partsize);
         String date = dateFormatter.format(new Date());
         Long lsize = new Long(archiveFile.length());
         String size = lsize.toString();
@@ -223,18 +226,21 @@ class BackupVault extends VaultXMLDB {
         }
     }
     private String RetrieveWholeArchive(String vault, String archiveid, String jobid, String filename, String wholetreehash, long size) throws Exception {
-        if (size > (long)Meg256) {
-            return RetrieveWholeArchiveInParts(vault,archiveid,jobid,filename,wholetreehash,size);
+        return RetrieveWholeArchive(vault,archiveid,jobid,filename,wholetreehash,size,DefaultPartsize);
+    }
+    private String RetrieveWholeArchive(String vault, String archiveid, String jobid, String filename, String wholetreehash, long size, int partsize) throws Exception {
+        if (size > (long)partsize) {
+            return RetrieveWholeArchiveInParts(vault,archiveid,jobid,filename,wholetreehash,size,partsize);
         } else {
             GetJobOutputResult result = AmazonGlacierJobOperations.getJobOutput(client,vault,jobid,null);
             java.io.InputStream bodyStream = result.getBody();
-            byte buffer[] = new byte[Meg256];
+            byte buffer[] = new byte[partsize];
             int bytesRead;
             
             String Checksum = result.getChecksum();
             File file = new File(filename);
             FileOutputStream of = new FileOutputStream(file);
-            while ((bytesRead = bodyStream.read(buffer, 0, Meg256)) > 0) {
+            while ((bytesRead = bodyStream.read(buffer, 0, partsize)) > 0) {
                 of.write(buffer, 0, bytesRead);
             }
             of.close();
@@ -247,7 +253,7 @@ class BackupVault extends VaultXMLDB {
             return filename;
         }
     }
-    private String RetrieveWholeArchiveInParts(String vault, String archiveid, String jobid, String filename, String wholetreehash, long size) throws Exception {
+    private String RetrieveWholeArchiveInParts(String vault, String archiveid, String jobid, String filename, String wholetreehash, long size,int thepartsize) throws Exception {
         File downloadpartfile = generateTempfile();
         File file = new File(filename);
         FileOutputStream fp = new FileOutputStream(file);
@@ -256,8 +262,8 @@ class BackupVault extends VaultXMLDB {
         long remainder = size;
         int partsize = 0;
         while (!done) {
-            if (remainder > (long)Meg256) {
-                partsize = Meg256;
+            if (remainder > (long)thepartsize) {
+                partsize = thepartsize;
             } else {
                 partsize = (int)remainder;
             }
@@ -266,12 +272,12 @@ class BackupVault extends VaultXMLDB {
             String range = f.toString();
             GetJobOutputResult result = AmazonGlacierJobOperations.getJobOutput(client,vault,jobid,range);
             java.io.InputStream bodyStream = result.getBody();
-            byte buffer[] = new byte[Meg256];
+            byte buffer[] = new byte[partsize];
             int bytesRead;
             
             String Checksum = result.getChecksum();
             FileOutputStream of = new FileOutputStream(downloadpartfile);
-            while ((bytesRead = bodyStream.read(buffer, 0, Meg256)) > 0) {
+            while ((bytesRead = bodyStream.read(buffer, 0, partsize)) > 0) {
                 of.write(buffer, 0, bytesRead);
             }
             of.close();
@@ -281,7 +287,7 @@ class BackupVault extends VaultXMLDB {
                 throw new Exception("Archive part ("+range+") SHA256 Tree Hash failure: locally computed: "+computedTreeHash+", returned: "+Checksum);
             }
             FileInputStream dfp = new FileInputStream(downloadpartfile);
-            while ((bytesRead = dfp.read(buffer, 0, Meg256)) > 0) {
+            while ((bytesRead = dfp.read(buffer, 0, partsize)) > 0) {
                 fp.write(buffer, 0, bytesRead);
             }
             dfp.close();
@@ -298,18 +304,21 @@ class BackupVault extends VaultXMLDB {
         }
     }
     private String RetrievePartArchive(String vault,String archiveid,String jobid,String filename,String treehash,long partialsize) throws Exception {
-        if (partialsize > (long)Meg256) {
-            return RetrievePartArchivePartArchiveInParts(vault,archiveid,jobid,filename,treehash,partialsize);
+        return RetrievePartArchive(vault,archiveid,jobid,filename,treehash,partialsize,DefaultPartsize);
+    }
+    private String RetrievePartArchive(String vault,String archiveid,String jobid,String filename,String treehash,long partialsize,int thepartsize) throws Exception {
+        if (partialsize > (long)thepartsize) {
+            return RetrievePartArchivePartArchiveInParts(vault,archiveid,jobid,filename,treehash,partialsize,thepartsize);
         } else {
             GetJobOutputResult result = AmazonGlacierJobOperations.getJobOutput(client,vault,jobid,null);
             java.io.InputStream bodyStream = result.getBody();
-            byte buffer[] = new byte[Meg256];
+            byte buffer[] = new byte[thepartsize];
             int bytesRead;
             
             String Checksum = result.getChecksum();
             File file = new File(filename);
             FileOutputStream of = new FileOutputStream(file);
-            while ((bytesRead = bodyStream.read(buffer, 0, Meg256)) > 0) {
+            while ((bytesRead = bodyStream.read(buffer, 0, thepartsize)) > 0) {
                 of.write(buffer, 0, bytesRead);
             }
             of.close();
@@ -322,7 +331,7 @@ class BackupVault extends VaultXMLDB {
             return filename;
         }
     }
-    private String RetrievePartArchivePartArchiveInParts(String vault,String archiveid,String jobid,String filename,String treehash,long partialsize) throws Exception {
+    private String RetrievePartArchivePartArchiveInParts(String vault,String archiveid,String jobid,String filename,String treehash,long partialsize,int thepartsize) throws Exception {
         File downloadpartfile = generateTempfile();
         File file = new File(filename);
         FileOutputStream fp = new FileOutputStream(file);
@@ -331,8 +340,8 @@ class BackupVault extends VaultXMLDB {
         long remainder = partialsize;
         int partsize = 0;
         while (!done) {
-            if (remainder > (long)Meg256) {
-                partsize = Meg256;
+            if (remainder > (long)thepartsize) {
+                partsize = thepartsize;
             } else {
                 partsize = (int)remainder;
             }
@@ -341,12 +350,12 @@ class BackupVault extends VaultXMLDB {
             String range = f.toString();
             GetJobOutputResult result = AmazonGlacierJobOperations.getJobOutput(client,vault,jobid,range);
             java.io.InputStream bodyStream = result.getBody();
-            byte buffer[] = new byte[Meg256];
+            byte buffer[] = new byte[thepartsize];
             int bytesRead;
             
             String Checksum = result.getChecksum();
             FileOutputStream of = new FileOutputStream(downloadpartfile);
-            while ((bytesRead = bodyStream.read(buffer, 0, Meg256)) > 0) {
+            while ((bytesRead = bodyStream.read(buffer, 0, thepartsize)) > 0) {
                 of.write(buffer, 0, bytesRead);
             }
             of.close();
@@ -358,7 +367,7 @@ class BackupVault extends VaultXMLDB {
                 }
             }
             FileInputStream dfp = new FileInputStream(downloadpartfile);
-            while ((bytesRead = dfp.read(buffer, 0, Meg256)) > 0) {
+            while ((bytesRead = dfp.read(buffer, 0, thepartsize)) > 0) {
                 fp.write(buffer, 0, bytesRead);
             }
             dfp.close();

@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 19 09:13:42 2015
- *  Last Modified : <150523.1531>
+ *  Last Modified : <150607.1443>
  *
  *  Description	
  *
@@ -76,7 +76,7 @@ import com.amazonaws.services.glacier.model.DeleteArchiveRequest;
 import com.amazonaws.util.BinaryUtils;
 
 public class AmazonGlacierArchiveOperations {
-    private static final long MEG256 = 256 * 1024 * 1024;
+    private static final int DefaultPartsize = 256 * 1024 * 1024;
     public static class UploadResult {
         public String location;
         public String sha256treehash;
@@ -86,14 +86,17 @@ public class AmazonGlacierArchiveOperations {
         }
     }
     public static UploadResult uploadArchive(AmazonGlacierClient client, String vaultName, File archiveFile) throws Exception {
+        return uploadArchive(client,vaultName,archiveFile,DefaultPartsize);
+    }
+    public static UploadResult uploadArchive(AmazonGlacierClient client, String vaultName, File archiveFile, int partsize) throws Exception {
         //System.err.println("*** AmazonGlacierArchiveOperations.uploadArchive(client,"+vaultName+","+archiveFile+")");
         String description = archiveFile.getName();
         //System.err.println("*** AmazonGlacierArchiveOperations.uploadArchive(): description = "+description);
         long size = archiveFile.length();
         //System.err.println("*** AmazonGlacierArchiveOperations.uploadArchive(): size = "+size);
         UploadResult result;
-        if (size > MEG256) {
-            result = UploadMultiPartArchive(client,vaultName,archiveFile,size,description);
+        if (size > (long)partsize) {
+            result = UploadMultiPartArchive(client,vaultName,archiveFile,size,description,partsize);
         } else {
             result = UploadArchiveInOnePart(client,vaultName,archiveFile,size,description);
         }
@@ -113,11 +116,11 @@ public class AmazonGlacierArchiveOperations {
         UploadArchiveResult uploadArchiveResult = client.uploadArchive(request);
         return new UploadResult(uploadArchiveResult.getLocation(), uploadArchiveResult.getChecksum());
     }
-    private static UploadResult UploadMultiPartArchive(AmazonGlacierClient client, String vaultName, File archiveFile, long size, String description) throws Exception {
+    private static UploadResult UploadMultiPartArchive(AmazonGlacierClient client, String vaultName, File archiveFile, long size, String description,int partsize) throws Exception {
         String checksum = "";
-        String uploadId = initiateMultipartUpload(client,vaultName,description);
+        String uploadId = initiateMultipartUpload(client,vaultName,description,partsize);
         try {
-            checksum = uploadParts(client,vaultName,archiveFile,uploadId);
+            checksum = uploadParts(client,vaultName,archiveFile,uploadId,partsize);
         } catch (Exception e) {
             abortMultipartUpload(client,vaultName,uploadId);
             throw e;
@@ -125,22 +128,22 @@ public class AmazonGlacierArchiveOperations {
         String location = CompleteMultiPartUpload(client,vaultName,archiveFile,uploadId, checksum);
         return new UploadResult(location,checksum);
     }
-    private static String initiateMultipartUpload(AmazonGlacierClient client,String vaultName,String description) throws Exception {
+    private static String initiateMultipartUpload(AmazonGlacierClient client,String vaultName,String description,int partsize) throws Exception {
         InitiateMultipartUploadRequest request = new InitiateMultipartUploadRequest()
               
               .withVaultName(vaultName)
               .withArchiveDescription(description)
-              .withPartSize(String.valueOf(MEG256));
+              .withPartSize(String.valueOf(partsize));
         
         //System.err.println("*** AmazonGlacierArchiveOperations.initiateMultipartUpload(): request = "+request);
         InitiateMultipartUploadResult result = client.initiateMultipartUpload(request);
         
         return result.getUploadId();
     }
-    private static String uploadParts(AmazonGlacierClient client,String vaultName,File archiveFile,String uploadId) throws Exception {
+    private static String uploadParts(AmazonGlacierClient client,String vaultName,File archiveFile,String uploadId,int partsize) throws Exception {
         int filePosition = 0;
         long currentPosition = 0;
-        byte[] buffer = new byte[(int)MEG256];
+        byte[] buffer = new byte[(int)partsize];
         List<byte[]> binaryChecksums = new LinkedList<byte[]>();
         
         FileInputStream fileToUpload = new FileInputStream(archiveFile);

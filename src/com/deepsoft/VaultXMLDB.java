@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 23 11:30:46 2015
- *  Last Modified : <150530.1245>
+ *  Last Modified : <150604.1547>
  *
  *  Description	
  *
@@ -52,6 +52,8 @@ import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.*;
 import java.io.*;
 import java.lang.*;
+import java.util.*;
+import java.util.regex.*;
 
 class VaultXMLDB {
     private Document db;
@@ -137,6 +139,19 @@ class VaultXMLDB {
                 return;
             }
         }
+    }
+    public LinkedList<Element> findvaultsbypattern(Pattern vpattern) {
+        Element vaultsnode = (Element) db.getElementsByTagName("vaults").item(0);
+        NodeList vaults = vaultsnode.getElementsByTagName("vault");
+        LinkedList<Element> result = new LinkedList<Element>();
+        for (int i=0; i < vaults.getLength(); i++) {
+            Element vault = (Element) vaults.item(i);
+            Matcher match = vpattern.matcher(vault.getAttribute("name"));
+            if (match.matches()) {
+                result.add(vault);
+            }
+        }
+        return result;
     }
     public Element findvaultbyname (String vname) {
         Element vaultsnode = (Element) db.getElementsByTagName("vaults").item(0);

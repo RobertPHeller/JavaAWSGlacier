@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 30 08:54:33 2015
- *  Last Modified : <150603.1103>
+ *  Last Modified : <150607.1447>
  *
  *  Description	
  *
@@ -52,6 +52,7 @@ import org.w3c.dom.*;
 import com.deepsoft.*;
 
 public class FTPToGlacier extends BackupVault {
+    private static final int PSize = 128 * 1024 * 1024;
     private static final File GlacierVaultDB_File = new File("/var/lib/Glacier/Common/glacier.xml");
     private static final String glacierTemp = "/home/AmazonGlacierTemp";
     private static final String FTPVaultName = "FTPDeepsoft";
@@ -205,7 +206,7 @@ public class FTPToGlacier extends BackupVault {
                 String indexfile = new File(FTPIndexDir,archivename_backupdate).getPath();
                 Element a = findarchivebydescr(v,tarfilename);
                 if (a == null) {
-                    a = UploadArchive(vlab,tarfile.getPath());
+                    a = UploadArchive(vlab,tarfile.getPath(),PSize);
                     if (a == null) continue;
                     Element indexfilenode = addTextNode(a,"indexfile",indexfile);
                     savedb(GlacierVaultDB_File);
