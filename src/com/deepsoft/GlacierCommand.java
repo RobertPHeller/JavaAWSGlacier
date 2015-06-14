@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150604.1609>
+ *  Last Modified : <150613.1420>
  *
  *  Description	
  *
@@ -65,7 +65,7 @@ public class GlacierCommand extends BackupVault {
     }
     private void mainLoop() throws IOException {
         String cp = System.getProperty("java.class.path");
-        String jname = new File(cp).getName();
+        String jname = new File(cp).getCanonicalFile().getName();
         Pattern p = Pattern.compile("JavaAWSGlacier-(\\d+)\\.jar");
         Matcher m = p.matcher(jname);
         String jdate = "unknown";
