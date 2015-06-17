@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 30 08:54:33 2015
- *  Last Modified : <150607.1447>
+ *  Last Modified : <150617.0733>
  *
  *  Description	
  *
@@ -212,7 +212,7 @@ public class WWWToGlacier extends BackupVault {
                     Calendar fcal = new GregorianCalendar();
                     fcal.setTime(filedate);
                     Calendar now = new GregorianCalendar();
-                    System.err.printf("*** WWWToGlacier.RsyncToTheGlacier(): %s last modidified on %s\n",tarfile.getPath(),filedate.toString());
+                    //System.err.printf("*** WWWToGlacier.RsyncToTheGlacier(): %s last modidified on %s\n",tarfile.getPath(),filedate.toString());
                     if ((fcal.get(Calendar.MONTH))+1<now.get(Calendar.MONTH)) {
                         System.err.println("Local archive deletable: "+tarfilename);
                         //if (tarfile.delete()) {

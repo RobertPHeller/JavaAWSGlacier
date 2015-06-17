@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <150604.1514>
+ *  Last Modified : <150617.0736>
  *
  *  Description	
  *
@@ -188,9 +188,9 @@ public class FlushOldVaults extends BackupVault {
             //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): delvault = %s\n",(delvault?"true":"false"));
             if (delvault) {
                 try {
-                    System.out.println("Vault "+tape+" would have been deleted from the Glacier");
-                    //deletevault(tape);
-                    //System.out.println("Vault "+tape+" deleted from the Glacier");
+                    //System.out.println("Vault "+tape+" would have been deleted from the Glacier");
+                    deletevault(tape);
+                    System.out.println("Vault "+tape+" deleted from the Glacier");
                 } catch (Exception e) {
                     System.err.println("Exception deleting vault: "+e.getMessage());
                 }
