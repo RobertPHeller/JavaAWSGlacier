@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150620.1552>
+ *  Last Modified : <150621.1421>
  *
  *  Description	
  *
@@ -162,7 +162,8 @@ public class GlacierCommand extends BackupVault {
         }
         String vaultName = args[0];
         JobParameters jobParams = new JobParameters()
-              .withType("inventory-retrieval");
+              .withType("inventory-retrieval")
+              .withSNSTopic(SNSTopic);
         InventoryRetrievalJobInput inventoryParams = null;
         int iopt = 1;
         while (iopt < args.length) {
@@ -201,10 +202,6 @@ public class GlacierCommand extends BackupVault {
             } else if (args[iopt].compareTo("-description") == 0 &&
                       (iopt+1) < args.length) {
                 jobParams.setDescription(args[iopt+1]);
-                iopt += 2;
-            } else if (args[iopt].compareTo("-snstopic") == 0 &&
-                      (iopt+1) < args.length) {
-                jobParams.setSNSTopic(args[iopt+1]);
                 iopt += 2;
             } else {
                 System.err.println("Unknown option: "+args[iopt]+", should be one of -startdate, -enddate, -marker, -limit, -format, -description, or -snstopic");
