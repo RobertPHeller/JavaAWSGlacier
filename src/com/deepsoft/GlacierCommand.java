@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150621.1421>
+ *  Last Modified : <150621.1455>
  *
  *  Description	
  *
@@ -321,6 +321,7 @@ public class GlacierCommand extends BackupVault {
                     Element sha256thelt = (Element) sha256ths.item(0);
                     sha256th = sha256thelt.getTextContent();
                 }
+                System.out.println("    Date: "+a.getAttribute("date"));
                 System.out.println("    Size: "+Humansize(size));
                 System.out.println("    Tree hash: "+sha256th);
                 totalsize += size;
