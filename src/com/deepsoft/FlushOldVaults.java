@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <150617.0736>
+ *  Last Modified : <150620.1246>
  *
  *  Description	
  *
@@ -112,6 +112,40 @@ public class FlushOldVaults extends BackupVault {
         int i;
         for (i=0; i < vaults.getLength(); i++) {
             Element vault = (Element) vaults.item(i);
+            String tape = vault.getAttribute("name");
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): (deleting valuts) tape = %s\n",tape);
+            InputStream tapelistIS = new FileInputStream(tapelist);
+            InputStreamReader tapelistISR = new InputStreamReader(tapelistIS);
+            BufferedReader tapelistfp = new BufferedReader(tapelistISR);
+            boolean delvault = true;
+            String line = null;
+            String p = "^\\d+\\s+"+tape+"\\s+.*";
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): p = '%s'\n",p);
+            Pattern tapePattern = Pattern.compile(p);
+            while ((line = tapelistfp.readLine()) != null) {
+                //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): line = '%s'\n",line);
+                Matcher match = tapePattern.matcher(line);
+                if (match.matches()) {
+                    //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): match matches '%s'\n",match.group(0));
+                    delvault = false;
+                    break;
+                }
+            }
+            tapelistIS.close();
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): delvault = %s\n",(delvault?"true":"false"));
+            if (delvault) {
+                try {
+                    //System.out.println("Vault "+tape+" would have been deleted from the Glacier");
+                    deletevault(tape);
+                    System.out.println("Vault "+tape+" deleted from the Glacier");
+                } catch (Exception e) {
+                    System.err.println("Exception deleting vault: "+e.getMessage());
+                }
+            }
+        }
+        savedb(GlacierVaultDB_File);
+        for (i=0; i < vaults.getLength(); i++) {
+            Element vault = (Element) vaults.item(i);
             Date vdate = parseVDBDate(vault.getAttribute("date"));
             if (vdate.after(stamp)) {continue;}
             String tape = vault.getAttribute("name");
@@ -121,6 +155,11 @@ public class FlushOldVaults extends BackupVault {
             int j;
             for (j=0; j < archives.getLength(); j++) {
                 Element a = (Element) archives.item(j);
+                Date adate = parseVDBDate(a.getAttribute("date"));
+                if (adate.after(stamp)) {
+                    deletable = false;
+                    break;
+                }
                 NodeList dtag = a.getElementsByTagName("description");
                 if (dtag.getLength() > 0) {
                     Element descrele = (Element) dtag.item(0);
@@ -129,7 +168,6 @@ public class FlushOldVaults extends BackupVault {
                         //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s', disks[%d] = '%s'\n",descr,k,disks[k]);
                         if (descr.matches("^.*\\."+disks[k]+"\\.0$")){
                             deletable = true;
-                            break;
                         }
                     }
                 }
@@ -163,40 +201,6 @@ public class FlushOldVaults extends BackupVault {
             }
             savedb(GlacierVaultDB_File);
         }
-        for (i=0; i < vaults.getLength(); i++) {
-            Element vault = (Element) vaults.item(i);
-            String tape = vault.getAttribute("name");
-            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): (deleting valuts) tape = %s\n",tape);
-            InputStream tapelistIS = new FileInputStream(tapelist);
-            InputStreamReader tapelistISR = new InputStreamReader(tapelistIS);
-            BufferedReader tapelistfp = new BufferedReader(tapelistISR);
-            boolean delvault = true;
-            String line = null;
-            String p = "^\\d+\\s+"+tape+"\\s+.*";
-            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): p = '%s'\n",p);
-            Pattern tapePattern = Pattern.compile(p);
-            while ((line = tapelistfp.readLine()) != null) {
-                //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): line = '%s'\n",line);
-                Matcher match = tapePattern.matcher(line);
-                if (match.matches()) {
-                    //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): match matches '%s'\n",match.group(0));
-                    delvault = false;
-                    break;
-                }
-            }
-            tapelistIS.close();
-            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): delvault = %s\n",(delvault?"true":"false"));
-            if (delvault) {
-                try {
-                    //System.out.println("Vault "+tape+" would have been deleted from the Glacier");
-                    deletevault(tape);
-                    System.out.println("Vault "+tape+" deleted from the Glacier");
-                } catch (Exception e) {
-                    System.err.println("Exception deleting vault: "+e.getMessage());
-                }
-            }
-        }
-        //savedb(GlacierVaultDB_File);
     }
     public static void main(String args[]) throws Exception {
         FlushOldVaults FOV = new FlushOldVaults();

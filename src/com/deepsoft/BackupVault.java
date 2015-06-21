@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 23 14:21:22 2015
- *  Last Modified : <150607.1439>
+ *  Last Modified : <150620.1537>
  *
  *  Description	
  *
@@ -145,6 +145,10 @@ class BackupVault extends VaultXMLDB {
         InitiateJobResult jResult = AmazonGlacierJobOperations.initiateJob(client,vaultName,jobParams);
         return jResult.getJobId();
     }
+    String InitiateRetrieveInventory(String vaultName,JobParameters jobParams) throws Exception {
+        InitiateJobResult jResult = AmazonGlacierJobOperations.initiateJob(client,vaultName,jobParams);
+        return jResult.getJobId();
+    }
     private boolean StringToBoolean(String boolstring) throws IllegalArgumentException {
         if (boolstring.compareTo("true") == 0) {
             return true;
@@ -202,6 +206,14 @@ class BackupVault extends VaultXMLDB {
             throw new Exception("No such vault: "+vaultName);
         }
         return AmazonGlacierJobOperations.describeJob(client,vaultName,jobId);
+    }
+    public String getJobBody(String vault,String jobid) throws Exception {
+        GetJobOutputResult result = AmazonGlacierJobOperations.getJobOutput(client,vault,jobid,null);
+        java.io.InputStream bodyStream = result.getBody();
+        int bodysize = bodyStream.available();
+        byte buffer[] = new byte[bodysize];
+        bodyStream.read(buffer);
+        return new String(buffer);
     }
     public String RetrieveArchive(String vault, String archiveid, String jobid, String filename, long size, String range, String treehash, String wholetreehash) throws Exception {
         long first = 0, last = 0;

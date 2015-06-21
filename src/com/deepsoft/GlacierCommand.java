@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150613.1420>
+ *  Last Modified : <150620.1552>
  *
  *  Description	
  *
@@ -45,6 +45,9 @@ import com.amazonaws.services.glacier.model.ListJobsResult;
 import com.amazonaws.services.glacier.model.GlacierJobDescription;
 import com.amazonaws.services.glacier.model.DescribeJobResult;
 import com.amazonaws.services.glacier.model.InventoryRetrievalJobDescription;
+import com.amazonaws.services.glacier.model.JobParameters;
+import com.amazonaws.services.glacier.model.InventoryRetrievalJobInput;
+import com.amazonaws.util.json.*;
 import com.deepsoft.*;
 
 public class GlacierCommand extends BackupVault {
@@ -78,7 +81,7 @@ public class GlacierCommand extends BackupVault {
         String line = null;
         if (_istty) {prompt("% ");}
         while ((line = in.readLine()) != null) {
-            String command[] = line.split("\\s");
+            String command[] = line.trim().split("\\s+");
             if (command.length < 1) {continue;}
             try {
                 evaluate(command);
@@ -111,13 +114,26 @@ public class GlacierCommand extends BackupVault {
                 showuploads(copyTail(command,2));
             } else if (verb2.matches("^pa.*")) {
                 showparts(copyTail(command,2));
+            } else if (verb2.matches("^inv.*")) {
+                showInventoryJob(copyTail(command,2));
             } else {
                 throw new Exception("I don't know how to show "+verb2);
             }
         } else if (verb.matches("^abort.*")) {
             abortmulti(copyTail(command,1));
         } else if (verb.compareTo("get") == 0) {
-            getarchive(copyTail(command,1));
+            if (command.length < 2) {
+                throw new Exception("Missing second command word for "+verb);
+            }
+            String verb2 = command[1];
+            verb2.toLowerCase();
+            if (verb2.matches("^arch.*")) {
+                getarchive(copyTail(command,2));
+            } else if (verb2.matches("^inv.*")) {
+                getInventoryJob(copyTail(command,2));
+            } else {
+                throw new Exception("I don't know how to get "+verb2); 
+            }
         } else if (verb.compareTo("rm") == 0 ||
                   verb.matches("^del.*")) {
             if (command.length < 2) {
@@ -132,11 +148,74 @@ public class GlacierCommand extends BackupVault {
             } else {
                 throw new Exception("I don't know how to delete "+verb2);
             }
+        } else if (verb.matches("^inv.*")) {
+            startInventoryRetrievalJob(copyTail(command,1));
         } else if (verb.compareTo("exit") == 0) {
             System.exit(0);
         } else {
             throw new Exception("I don't know how to "+verb);
         }
+    }
+    private void startInventoryRetrievalJob(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vaultName = args[0];
+        JobParameters jobParams = new JobParameters()
+              .withType("inventory-retrieval");
+        InventoryRetrievalJobInput inventoryParams = null;
+        int iopt = 1;
+        while (iopt < args.length) {
+            if (args[iopt].compareTo("-startdate") == 0 &&
+                (iopt+1) < args.length) {
+                if (inventoryParams == null) {
+                    inventoryParams = new InventoryRetrievalJobInput();
+                }
+                inventoryParams.setStartDate(args[iopt+1]);
+                iopt += 2;
+            } else if (args[iopt].compareTo("-enddate") == 0 &&
+                      (iopt+1) < args.length) {
+                if (inventoryParams == null) {
+                    inventoryParams = new InventoryRetrievalJobInput();
+                }
+                inventoryParams.setEndDate(args[iopt+1]);
+                iopt += 2;
+            } else if (args[iopt].compareTo("-marker") == 0 &&
+                      (iopt+1) < args.length) {
+                if (inventoryParams == null) {
+                    inventoryParams = new InventoryRetrievalJobInput();
+                }
+                inventoryParams.setMarker(args[iopt+1]);
+                iopt += 2;
+            } else if (args[iopt].compareTo("-limit") == 0 &&
+                      (iopt+1) < args.length) {
+                if (inventoryParams == null) {
+                    inventoryParams = new InventoryRetrievalJobInput();
+                }
+                inventoryParams.setLimit(args[iopt+1]);
+                iopt += 2;
+            } else if (args[iopt].compareTo("-format") == 0 &&
+                      (iopt+1) < args.length) {
+                jobParams.setFormat(args[iopt+1]);
+                iopt += 2;
+            } else if (args[iopt].compareTo("-description") == 0 &&
+                      (iopt+1) < args.length) {
+                jobParams.setDescription(args[iopt+1]);
+                iopt += 2;
+            } else if (args[iopt].compareTo("-snstopic") == 0 &&
+                      (iopt+1) < args.length) {
+                jobParams.setSNSTopic(args[iopt+1]);
+                iopt += 2;
+            } else {
+                System.err.println("Unknown option: "+args[iopt]+", should be one of -startdate, -enddate, -marker, -limit, -format, -description, or -snstopic");
+                Usage();
+            }
+        }
+        if (inventoryParams != null) {
+            jobParams.setInventoryRetrievalParameters(inventoryParams);
+        }
+        String jobId = InitiateRetrieveInventory(vaultName,jobParams);
+        System.out.printf("Job created, job id is %s\n",jobId);
     }
     private void showvaults(String args[]) throws Exception {
         String p = ".*";
@@ -281,12 +360,14 @@ public class GlacierCommand extends BackupVault {
         }
         String vault = args[0];
         ListJobsResult ljResult = GetJobList(vault,copyTail(args,1));
+        //System.err.println("*** GlacierCommand.showjobs(): ljResult is "+ljResult.toString());
         java.util.List<GlacierJobDescription> jobList = ljResult.getJobList();
         if (jobList != null) {
             int index = 0;
             Iterator itr = jobList.iterator();
             while (itr.hasNext()) {
                 GlacierJobDescription job = (GlacierJobDescription)itr.next();
+                //System.err.println("*** GlacierCommand.showjobs(): job is "+job.toString());
                 index++;
                 String jobId = job.getJobId();
                 String jobDescription = job.getJobDescription();
@@ -302,10 +383,27 @@ public class GlacierCommand extends BackupVault {
                 if (statusCode == null) statusCode = "";
                 String statusMessage = job.getStatusMessage();
                 if (statusMessage == null) statusMessage = "";
-                long archiveSizeInBytes = job.getArchiveSizeInBytes();
-                long inventorySizeInBytes = job.getInventorySizeInBytes();
+                //System.err.println("*** GlacierCommand.showjobs(): statusMessage = "+statusMessage);
+                long archiveSizeInBytes = 0;
+                long inventorySizeInBytes = 0;
+                //System.err.println("*** GlacierCommand.showjobs(): action is "+action);
+                if (action.compareTo("InventoryRetrieval") == 0) {
+                    try {
+                        inventorySizeInBytes = job.getInventorySizeInBytes();
+                    } catch (Exception e) {
+                        inventorySizeInBytes = -1;
+                    }
+                } else {
+                    try {
+                        archiveSizeInBytes = job.getArchiveSizeInBytes();
+                    } catch (Exception e) {
+                        archiveSizeInBytes = -1;
+                    }
+                }
+                //System.err.println("*** GlacierCommand.showjobs(): archiveSizeInBytes = "+archiveSizeInBytes+", inventorySizeInBytes = "+inventorySizeInBytes);
                 String sNSTopic = job.getSNSTopic();
                 if (sNSTopic == null) sNSTopic = "";
+                //System.err.println("*** GlacierCommand.showjobs(): sNSTopic is "+sNSTopic);
                 String completionDate = job.getCompletionDate();
                 if (completionDate == null) completionDate = "";
                 String sHA256TreeHash = job.getSHA256TreeHash();
@@ -315,6 +413,7 @@ public class GlacierCommand extends BackupVault {
                 String retrievalByteRange = job.getRetrievalByteRange();
                 if (retrievalByteRange == null) retrievalByteRange = "";
                 InventoryRetrievalJobDescription inventoryRetrievalParameters = job.getInventoryRetrievalParameters();
+                //if (inventoryRetrievalParameters != null) System.err.println("*** GlacierCommand.showjobs(): inventoryRetrievalParameters is "+inventoryRetrievalParameters.toString());
                 System.out.printf("%2d: %s\n",index,jobDescription);
                 System.out.printf("    Action: %s\n",action);
                 System.out.printf("    ArchiveId: %s\n",archiveId);
@@ -384,8 +483,18 @@ public class GlacierCommand extends BackupVault {
         if (statusCode == null) statusCode = "";
         String statusMessage = job.getStatusMessage();
         if (statusMessage == null) statusMessage = "";
-        long archiveSizeInBytes = job.getArchiveSizeInBytes();
-        long inventorySizeInBytes = job.getInventorySizeInBytes();
+        long archiveSizeInBytes = 0;
+        try {
+            archiveSizeInBytes = job.getArchiveSizeInBytes();
+        } catch (Exception e) {
+            archiveSizeInBytes = -1;
+        }
+        long inventorySizeInBytes = 0;
+        try {
+            inventorySizeInBytes = job.getInventorySizeInBytes();
+        } catch (Exception e) {
+            inventorySizeInBytes = -1;
+        }
         String sNSTopic = job.getSNSTopic();
         if (sNSTopic == null) sNSTopic = "";
         String completionDate = job.getCompletionDate();
@@ -433,6 +542,49 @@ public class GlacierCommand extends BackupVault {
         System.out.printf("StatusCode: %s\n",statusCode);
         System.out.printf("StatusMessage: %s\n",statusMessage);
         System.out.printf("VaultARN: %s\n",vaultARN);
+    }
+    private void showInventoryJob(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vaultName = args[0];
+        if (args.length < 2) {
+            throw new Exception("Missing job id");
+        }
+        String jobId = args[1];
+        String inventoryBody = getJobBody(vaultName,jobId);
+        JSONObject obj = new JSONObject(inventoryBody);
+        String VaultARN = obj.getString("VaultARN");
+        String InventoryDate = obj.getString("InventoryDate");
+        JSONArray ArchiveList = obj.getJSONArray("ArchiveList");
+        System.out.printf("VaultARN:      %s\n",VaultARN);
+        System.out.printf("InventoryDate: %s\n",InventoryDate);
+        int ia;
+        for (ia = 0; ia < ArchiveList.length(); ia++) {
+            String ArchiveId = ArchiveList.getJSONObject(ia).getString("ArchiveId");
+            String ArchiveDescription = ArchiveList.getJSONObject(ia).getString("ArchiveDescription");
+            String CreationDate = ArchiveList.getJSONObject(ia).getString("CreationDate");
+            long Size = ArchiveList.getJSONObject(ia).getLong("Size");
+            String SHA256TreeHash = ArchiveList.getJSONObject(ia).getString("SHA256TreeHash");
+            System.out.printf(" %4d) %s\n",ia+1,ArchiveId);
+            System.out.printf("     Description: %s\n",ArchiveDescription);
+            System.out.printf("     Date:        %s\n",CreationDate);
+            System.out.printf("     TreeHash:    %s\n",SHA256TreeHash);
+            System.out.printf("     Size:        %s\n",Humansize(Size));
+            System.out.println("");
+        }
+    }
+    private void getInventoryJob(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vaultName = args[0];
+        if (args.length < 2) {
+            throw new Exception("Missing job id");
+        }
+        String jobId = args[1];
+        String inventoryBody = getJobBody(vaultName,jobId);
+        System.out.println(inventoryBody);
     }
     private void showuploads(String args[]) throws Exception {
         if (args.length < 1) {
