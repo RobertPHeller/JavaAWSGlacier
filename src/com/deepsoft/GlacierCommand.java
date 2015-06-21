@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150621.1455>
+ *  Last Modified : <150621.1543>
  *
  *  Description	
  *
@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.regex.*;
 import java.lang.*;
 import org.w3c.dom.*;
+import com.amazonaws.services.glacier.TreeHashGenerator;
 import com.amazonaws.services.glacier.model.ListPartsResult;
 import com.amazonaws.services.glacier.model.ListMultipartUploadsResult;
 import com.amazonaws.services.glacier.model.PartListElement;
@@ -150,11 +151,21 @@ public class GlacierCommand extends BackupVault {
             }
         } else if (verb.matches("^inv.*")) {
             startInventoryRetrievalJob(copyTail(command,1));
+        } else if (verb.matches("^tree.*")) {
+            treehash(copyTail(command,1));
         } else if (verb.compareTo("exit") == 0) {
             System.exit(0);
         } else {
             throw new Exception("I don't know how to "+verb);
         }
+    }
+    private void treehash(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing filename");
+        }
+        String filename = args[0];
+        String computedTreeHash = TreeHashGenerator.calculateTreeHash(new File(filename));
+        System.out.printf("Tree Hash of %s is %s\n",filename,computedTreeHash);
     }
     private void startInventoryRetrievalJob(String args[]) throws Exception {
         if (args.length < 1) {
