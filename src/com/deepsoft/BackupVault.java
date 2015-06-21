@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 23 14:21:22 2015
- *  Last Modified : <150620.1537>
+ *  Last Modified : <150621.0929>
  *
  *  Description	
  *
@@ -60,6 +60,8 @@ import com.amazonaws.services.glacier.model.ListJobsRequest;
 import com.amazonaws.services.glacier.model.ListJobsResult;
 import com.amazonaws.services.glacier.model.DescribeJobResult;
 import com.amazonaws.services.glacier.model.GetJobOutputResult;
+import com.amazonaws.services.glacier.model.DescribeVaultRequest;
+import com.amazonaws.services.glacier.model.DescribeVaultResult;
 import org.w3c.dom.*;
 import com.deepsoft.VaultXMLDB;
 
@@ -422,4 +424,11 @@ class BackupVault extends VaultXMLDB {
         removevault(vault);
         return vault;
     }
+    public DescribeVaultResult describevault(String vaultName) throws Exception {
+        DescribeVaultRequest describeVaultRequest = new DescribeVaultRequest()
+              .withVaultName(vaultName);
+        DescribeVaultResult describeVaultResult = client.describeVault(describeVaultRequest);
+        return(describeVaultResult);
+    }
+        
 }
