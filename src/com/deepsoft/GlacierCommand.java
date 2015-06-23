@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150621.1543>
+ *  Last Modified : <150623.0720>
  *
  *  Description	
  *
@@ -48,10 +48,12 @@ import com.amazonaws.services.glacier.model.DescribeJobResult;
 import com.amazonaws.services.glacier.model.InventoryRetrievalJobDescription;
 import com.amazonaws.services.glacier.model.JobParameters;
 import com.amazonaws.services.glacier.model.InventoryRetrievalJobInput;
+import com.amazonaws.services.glacier.model.DescribeVaultResult;
 import com.amazonaws.util.json.*;
 import com.deepsoft.*;
 
 public class GlacierCommand extends BackupVault {
+    private static final Pattern vaultARNPattern = Pattern.compile("^arn:aws:glacier:([^:]+):(\\d+):vaults/([^/]+)$");
     String SNSTopic;
     File GlacierVaultDB_File;
     boolean _istty = false;
@@ -153,6 +155,8 @@ public class GlacierCommand extends BackupVault {
             startInventoryRetrievalJob(copyTail(command,1));
         } else if (verb.matches("^tree.*")) {
             treehash(copyTail(command,1));
+        } else if (verb.matches("^sync.*")) {
+            syncinventory(copyTail(command,1));
         } else if (verb.compareTo("exit") == 0) {
             System.exit(0);
         } else {
@@ -594,6 +598,76 @@ public class GlacierCommand extends BackupVault {
         String jobId = args[1];
         String inventoryBody = getJobBody(vaultName,jobId);
         System.out.println(inventoryBody);
+    }
+    private void syncinventory(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vault = args[0];
+        if (args.length < 2) {
+            throw new Exception("Missing job id");
+        }
+        String jobId = args[1];
+        String inventoryBody = getJobBody(vault,jobId);
+        JSONObject obj = new JSONObject(inventoryBody);
+        String vaultARN = obj.getString("VaultARN");
+        String vlocation = "";
+        boolean modified = false;
+        Matcher match = vaultARNPattern.matcher(vaultARN);
+        if (match.matches()) {
+            vlocation = "/"+match.group(2)+"/vaults/"+match.group(3);
+        } else {
+            throw new Exception("Cannot parse vaultARN: "+vaultARN);
+        }
+        Element vnode = findvaultbyname(vault);
+        if (vnode == null) {
+            DescribeVaultResult describeVaultResult = describevault(vault);
+            System.err.printf("*** GlacierCommand.syncinventory() adding vault: %s\n",vault);
+            vnode = addvault(vlocation,describeVaultResult.getCreationDate());
+            modified = true;
+        }    
+        JSONArray ArchiveList = obj.getJSONArray("ArchiveList");
+        int ia;
+        for (ia = 0; ia < ArchiveList.length(); ia++) {
+            String ArchiveId = ArchiveList.getJSONObject(ia).getString("ArchiveId");
+            String ArchiveDescription = ArchiveList.getJSONObject(ia).getString("ArchiveDescription");
+            String CreationDate = ArchiveList.getJSONObject(ia).getString("CreationDate");
+            long Size = ArchiveList.getJSONObject(ia).getLong("Size");
+            String SHA256TreeHash = ArchiveList.getJSONObject(ia).getString("SHA256TreeHash");
+            Element anode = findarchivebyaid(vnode,ArchiveId);
+            if (anode == null) {
+                String aloc = vlocation+"/archives/"+ArchiveId;
+                System.err.printf("*** GlacierCommand.syncinventory() adding archive: %s\n",aloc);
+                anode = addarchive(aloc,CreationDate,new Long(Size).toString(),SHA256TreeHash,ArchiveDescription);
+                modified = true;
+            }
+        }
+        boolean notdone = true;
+        while (notdone) {
+            boolean remove = true;
+            NodeList archives = vnode.getElementsByTagName("archive");
+            int j;
+            for (j=0; j < archives.getLength();j++) {
+                Element a = (Element) archives.item(j);
+                String aid = a.getAttribute("archiveid");
+                for (ia = 0; ia < ArchiveList.length(); ia++) {
+                    String ArchiveId = ArchiveList.getJSONObject(ia).getString("ArchiveId");
+                    System.err.printf("*** GlacierCommand.syncinventory() comparing %s to %s\n",ArchiveId,aid);
+                    if (ArchiveId.compareTo(aid) == 0) {
+                        remove = false;
+                        break;
+                    }
+                }
+                if (remove) {
+                    System.err.printf("*** GlacierCommand.syncinventory() removing archive: %s\n",aid);
+                    vnode.removeChild(a);
+                    modified = true;
+                    break;
+                }
+            }
+            notdone = (j >= archives.getLength());
+        }
+        if (modified) savedb(GlacierVaultDB_File);
     }
     private void showuploads(String args[]) throws Exception {
         if (args.length < 1) {
