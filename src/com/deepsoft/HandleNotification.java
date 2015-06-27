@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun Jun 21 08:34:02 2015
- *  Last Modified : <150621.1017>
+ *  Last Modified : <150624.1544>
  *
  *  Description	
  *
@@ -150,6 +150,7 @@ public class HandleNotification extends BackupVault {
         Element vnode = findvaultbyname(vault);
         if (vnode == null) {
             DescribeVaultResult describeVaultResult = describevault(vault);
+            System.err.printf("*** HandleNotification.SyncInventory() adding vault: %s\n",vault);
             vnode = addvault(vlocation,describeVaultResult.getCreationDate());
             modified = true;
         }    
@@ -164,12 +165,14 @@ public class HandleNotification extends BackupVault {
             Element anode = findarchivebyaid(vnode,ArchiveId);
             if (anode == null) {
                 String aloc = vlocation+"/archives/"+ArchiveId;
+                System.err.printf("*** HandleNotification.SyncInventory() adding archive: %s\n",aloc);
                 anode = addarchive(aloc,CreationDate,new Long(Size).toString(),SHA256TreeHash,ArchiveDescription);
                 modified = true;
             }
         }
         boolean notdone = true;
         while (notdone) {
+            notdone = false;
             boolean remove = true;
             NodeList archives = vnode.getElementsByTagName("archive");
             int j;
@@ -178,18 +181,21 @@ public class HandleNotification extends BackupVault {
                 String aid = a.getAttribute("archiveid");
                 for (ia = 0; ia < ArchiveList.length(); ia++) {
                     String ArchiveId = ArchiveList.getJSONObject(ia).getString("ArchiveId");
+                    System.err.printf("*** HandleNotification.SyncInventory() comparing %s to %s\n",ArchiveId,aid);
                     if (ArchiveId.compareTo(aid) == 0) {
                         remove = false;
                         break;
                     }
                 }
                 if (remove) {
+                    System.err.printf("*** HandleNotification.SyncInventory() removing archive: %s\n",aid);                    
                     vnode.removeChild(a);
                     modified = true;
+                    notdone = true;
                     break;
                 }
             }
-            notdone = (j >= archives.getLength());
+            System.err.printf("*** HandleNotification.SyncInventory() j = %d (%d)\n",j,archives.getLength());                    
         }
         if (modified) savedb(GlacierVaultDB_File);
     }

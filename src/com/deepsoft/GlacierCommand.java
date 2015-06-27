@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150623.0720>
+ *  Last Modified : <150624.1544>
  *
  *  Description	
  *
@@ -644,6 +644,7 @@ public class GlacierCommand extends BackupVault {
         }
         boolean notdone = true;
         while (notdone) {
+            notdone = false;
             boolean remove = true;
             NodeList archives = vnode.getElementsByTagName("archive");
             int j;
@@ -662,10 +663,10 @@ public class GlacierCommand extends BackupVault {
                     System.err.printf("*** GlacierCommand.syncinventory() removing archive: %s\n",aid);
                     vnode.removeChild(a);
                     modified = true;
+                    notdone = true;
                     break;
                 }
             }
-            notdone = (j >= archives.getLength());
         }
         if (modified) savedb(GlacierVaultDB_File);
     }
