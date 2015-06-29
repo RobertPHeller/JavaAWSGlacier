@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <150628.1041>
+ *  Last Modified : <150629.0936>
  *
  *  Description	
  *
@@ -166,9 +166,10 @@ public class FlushOldVaults extends BackupVault {
                     if (!descr.matches("^.*\\.\\d$")) continue;
                     if (descr.matches("^.*\\.0$")) {
                         hasfulls = true;
-                    }
+                    } 
                     Date adate = parseVDBDate(a.getAttribute("date"));
                     //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = %s: adate is %s\n",descr,adate.toString());
+                    
                     if (adate.after(stamp)) {
                         deletable = false;
                         continue;
@@ -188,23 +189,33 @@ public class FlushOldVaults extends BackupVault {
             if (!deletable) {continue;}
             //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletable is true\n");
             boolean deletetape = true;
-            for (j=0; j < archives.getLength() && deletetape; j++) {
+            int archivecount = archives.getLength();
+            int deletedarchives = 0;
+            j = archives.getLength();
+            while (j > 0) {
+                j--;
+                System.err.printf("*** FlushOldVaults.flushvaultsbefore(): j = %d, archives.getLength() = %d\n",j,archives.getLength());
                 Element a = (Element) archives.item(j);
                 NodeList dtag = a.getElementsByTagName("description");
                 if (dtag.getLength() < 1) {continue;}
                 Element descrele = (Element) dtag.item(0);
                 String descr = descrele.getTextContent();
+                System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s'\n",descr);
                 try {
                     //System.out.println("Archive "+vault.getAttribute("name")+"/"+descr+" would have been deleted from the Glacier");
                     //deletetape = false;
                     deletearchive(vault.getAttribute("name"),descr);
                     System.out.println("Archive "+vault.getAttribute("name")+"/"+descr+" deleted from the Glacier");
+                    deletedarchives++;
                 } catch (Exception e) {
                     System.err.println("Error deleting Archive "+vault.getAttribute("name")+"/"+descr+": "+e.getMessage());
                     deletetape = false;
                 }
             }
-            if (deletetape) {
+            System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletedarchives = %d, archivecount = %d\n",deletedarchives,archivecount);
+            if (deletedarchives < archivecount) deletetape = false;
+            System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletetape = %s, archives.getLength() = %d\n",(deletetape)?"true":"false",archives.getLength());
+            if (deletetape && archives.getLength() == 0) {
                 try {
                     //System.out.println(tape+" would have been deleted from the tape catalog");
                     amrmtape(tape);
