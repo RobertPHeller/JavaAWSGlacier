@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 14:00:27 2015
- *  Last Modified : <150530.1128>
+ *  Last Modified : <150628.1018>
  *
  *  Description	
  *
@@ -123,7 +123,13 @@ public class VaultToGlacier extends BackupVault {
                     Element a = findarchivebydescr(v,aFile.getName());
                     if (a == null) {
                         System.out.println("Uploading Archive: "+vlab+"/"+aFile.getName());
-                        a = UploadArchive(vlab,aFile.getPath());
+                        try {
+                            a = UploadArchive(vlab,aFile.getPath());
+                        } catch (Exception e) {
+                            System.out.printf("Archive upload failed %s: %s because %s\n",
+                                      vlab,aFile.getName(),e.getMessage());
+                            a = null;
+                        }
                         if (a != null) {
                             System.out.println("Archive uploaded: "+vlab+": "+aFile.getName());
                             savedb(GlacierVaultDB_File);

@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <150627.1411>
+ *  Last Modified : <150628.1041>
  *
  *  Description	
  *
@@ -147,10 +147,10 @@ public class FlushOldVaults extends BackupVault {
         for (i=0; i < vaults.getLength(); i++) {
             Element vault = (Element) vaults.item(i);
             Date vdate = parseVDBDate(vault.getAttribute("date"));
-            System.err.printf("*** FlushOldVaults.flushvaultsbefore(): vault is %s: vdate is %s, stamp is %s\n",vault.getAttribute("name"),vdate.toString(),stamp.toString());
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): vault is %s: vdate is %s, stamp is %s\n",vault.getAttribute("name"),vdate.toString(),stamp.toString());
             if (vdate.after(stamp)) {continue;}
             String tape = vault.getAttribute("name");
-            System.err.printf("*** FlushOldVaults.flushvaultsbefore(): (deleting archives) tape = %s\n",tape);
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): (deleting archives) tape = %s\n",tape);
             NodeList archives = vault.getElementsByTagName("archive");
             boolean deletable = false;
             boolean hasfulls  = false;
@@ -162,15 +162,16 @@ public class FlushOldVaults extends BackupVault {
                 if (dtag.getLength() > 0) {
                     Element descrele = (Element) dtag.item(0);
                     String descr = descrele.getTextContent();
+                    //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s'\n",descr);
                     if (!descr.matches("^.*\\.\\d$")) continue;
                     if (descr.matches("^.*\\.0$")) {
                         hasfulls = true;
                     }
                     Date adate = parseVDBDate(a.getAttribute("date"));
-                    System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = %s: adate is %s\n",descr,adate.toString());
+                    //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = %s: adate is %s\n",descr,adate.toString());
                     if (adate.after(stamp)) {
                         deletable = false;
-                        break;
+                        continue;
                     }
                     for (int k = 0; k < disks.length; k++) {
                         //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s', disks[%d] = '%s'\n",descr,k,disks[k]);
@@ -180,12 +181,12 @@ public class FlushOldVaults extends BackupVault {
                     }
                 }
             }
-            System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletable is %s, hasfulls = %s\n",(deletable)?"true":"false",(hasfulls)?"true":"false");
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletable is %s, hasfulls = %s\n",(deletable)?"true":"false",(hasfulls)?"true":"false");
             if (!hasfulls) {
                 deletable = true;
             }
             if (!deletable) {continue;}
-            System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletable is true\n");
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletable is true\n");
             boolean deletetape = true;
             for (j=0; j < archives.getLength() && deletetape; j++) {
                 Element a = (Element) archives.item(j);
@@ -194,10 +195,10 @@ public class FlushOldVaults extends BackupVault {
                 Element descrele = (Element) dtag.item(0);
                 String descr = descrele.getTextContent();
                 try {
-                    System.out.println("Archive "+vault.getAttribute("name")+"/"+descr+" would have been deleted from the Glacier");
+                    //System.out.println("Archive "+vault.getAttribute("name")+"/"+descr+" would have been deleted from the Glacier");
                     //deletetape = false;
-                    //deletearchive(vault.getAttribute("name"),descr);
-                    //System.out.println("Archive "+vault.getAttribute("name")+"/"+descr+" deleted from the Glacier");
+                    deletearchive(vault.getAttribute("name"),descr);
+                    System.out.println("Archive "+vault.getAttribute("name")+"/"+descr+" deleted from the Glacier");
                 } catch (Exception e) {
                     System.err.println("Error deleting Archive "+vault.getAttribute("name")+"/"+descr+": "+e.getMessage());
                     deletetape = false;
@@ -205,9 +206,9 @@ public class FlushOldVaults extends BackupVault {
             }
             if (deletetape) {
                 try {
-                    System.out.println(tape+" would have been deleted from the tape catalog");
-                    //amrmtape(tape);
-                    //System.out.println(tape+" deleted from the tape catalog");
+                    //System.out.println(tape+" would have been deleted from the tape catalog");
+                    amrmtape(tape);
+                    System.out.println(tape+" deleted from the tape catalog");
                 } catch (Exception e) {
                     System.err.println("Error deleting tape "+tape+": "+e.getMessage());
                 }
@@ -219,30 +220,30 @@ public class FlushOldVaults extends BackupVault {
         FlushOldVaults FOV = new FlushOldVaults();
         Calendar today = new GregorianCalendar();
         int thismonth = today.get(Calendar.MONTH);
-        System.err.printf("*** FlushOldVaults.main(): thismonth = %d\n",thismonth);
+        //System.err.printf("*** FlushOldVaults.main(): thismonth = %d\n",thismonth);
         int year      = today.get(Calendar.YEAR);
-        System.err.printf("*** FlushOldVaults.main(): year = %d\n",year);
+        //System.err.printf("*** FlushOldVaults.main(): year = %d\n",year);
         int ninetydays = 90*24*60*60;
         SimpleDateFormat simpleDate = new SimpleDateFormat("MM/dd/yyyy");
         Formatter f = new Formatter();
         f.format("%02d/01/%04d",thismonth,year);
-        System.err.printf("*** FlushOldVaults.main(): f is %s\n",f.toString());
+        //System.err.printf("*** FlushOldVaults.main(): f is %s\n",f.toString());
         long currentMonth = simpleDate.parse(f.toString()).getTime();
         f.close();
-        System.err.printf("*** FlushOldVaults.main(): currentMonth = %d\n",currentMonth);
+        //System.err.printf("*** FlushOldVaults.main(): currentMonth = %d\n",currentMonth);
         long qbegin1 = currentMonth - ninetydays;
         Calendar qbeginCal = new GregorianCalendar();
         qbeginCal.setTime(new Date(qbegin1));
         int qbeginMonth = qbeginCal.get(Calendar.MONTH);
-        System.err.printf("*** FlushOldVaults.main(): qbeginMonth = %d\n",qbeginMonth);
+        //System.err.printf("*** FlushOldVaults.main(): qbeginMonth = %d\n",qbeginMonth);
         int qbeginYear  = qbeginCal.get(Calendar.YEAR);
-        System.err.printf("*** FlushOldVaults.main(): qbeginYear = %d\n",qbeginYear);
+        //System.err.printf("*** FlushOldVaults.main(): qbeginYear = %d\n",qbeginYear);
         f = new Formatter();
         f.format("%02d/01/%04d",qbeginMonth,qbeginYear);
-        System.err.printf("*** FlushOldVaults.main(): f is %s\n",f.toString());
+        //System.err.printf("*** FlushOldVaults.main(): f is %s\n",f.toString());
         Date qbegin = simpleDate.parse(f.toString());
         f.close();
-        System.err.printf("*** FlushOldVaults.main(): qbegin = %s\n",qbegin.toString());
+        //System.err.printf("*** FlushOldVaults.main(): qbegin = %s\n",qbegin.toString());
         String disks[] = new String[]{"boot","bootefi","root","distros","ub140464"};
         FOV.flushvaultsbefore(qbegin,disks);
     }
