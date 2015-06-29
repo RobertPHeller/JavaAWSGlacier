@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 23 14:21:22 2015
- *  Last Modified : <150621.0929>
+ *  Last Modified : <150629.1654>
  *
  *  Description	
  *
@@ -409,6 +409,20 @@ class BackupVault extends VaultXMLDB {
         Element anode = findarchivebydescr(vnode,archive);
         if (anode == null) {
             throw new Exception("No such archive in "+vault+": "+archive);
+        }
+        String archiveid = anode.getAttribute("archiveid");
+        AmazonGlacierArchiveOperations.deleteArchive(client,vault,archiveid);
+        removearchive(vault,archiveid);
+        return vault+" "+archiveid;
+    }
+    public String deletearchive_byaid(String vault,String aid) throws Exception {
+        Element vnode = findvaultbyname(vault);
+        if (vnode == null) {
+            throw new Exception("No such vault: "+vault);
+        }
+        Element anode = findarchivebyaid(vnode,aid);
+        if (anode == null) {
+            throw new Exception("No such archive in "+vault+": "+aid);
         }
         String archiveid = anode.getAttribute("archiveid");
         AmazonGlacierArchiveOperations.deleteArchive(client,vault,archiveid);

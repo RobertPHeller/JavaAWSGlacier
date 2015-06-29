@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150624.1544>
+ *  Last Modified : <150629.1655>
  *
  *  Description	
  *
@@ -644,7 +644,6 @@ public class GlacierCommand extends BackupVault {
         }
         boolean notdone = true;
         while (notdone) {
-            notdone = false;
             boolean remove = true;
             NodeList archives = vnode.getElementsByTagName("archive");
             int j;
@@ -663,10 +662,10 @@ public class GlacierCommand extends BackupVault {
                     System.err.printf("*** GlacierCommand.syncinventory() removing archive: %s\n",aid);
                     vnode.removeChild(a);
                     modified = true;
-                    notdone = true;
                     break;
                 }
             }
+            notdone = (j >= archives.getLength());
         }
         if (modified) savedb(GlacierVaultDB_File);
     }
@@ -785,7 +784,15 @@ public class GlacierCommand extends BackupVault {
             throw new Exception("Missing archive name");
         }
         String archive = args[1];
-        String response = super.deletearchive(vault,archive);
+        String response = "";
+        if (archive.compareTo("-aid") == 0) {
+            if (args.length < 3) {
+                throw new Exception("Missing archive id");
+            }
+            response = deletearchive_byaid(vault,args[2]);
+        } else {
+            response = super.deletearchive(vault,archive);
+        }
         if (response != null && response != "") savedb(GlacierVaultDB_File);
     }
     public static void main(String args[]) throws Exception {
