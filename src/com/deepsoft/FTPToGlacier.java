@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 30 08:54:33 2015
- *  Last Modified : <150617.0733>
+ *  Last Modified : <150728.1540>
  *
  *  Description	
  *
@@ -218,12 +218,12 @@ public class FTPToGlacier extends BackupVault {
                     Calendar now = new GregorianCalendar();
                     //System.err.printf("*** FTPToGlacier.RsyncToTheGlacier(): %s last modidified on %s\n",tarfile.getPath(),filedate.toString());
                     if ((fcal.get(Calendar.MONTH))+1<now.get(Calendar.MONTH)) {
-                        System.err.println("Local archive deletable: "+tarfilename);
-                        //if (tarfile.delete()) {
-                        //    System.out.println("Local archive deleted: "+tarfilename);
-                        //} else {
-                        //    System.err.println("Failed to delete local archive: "+tarfilename);
-                        //}
+                        //System.err.println("Local archive deletable: "+tarfilename);
+                        if (tarfile.delete()) {
+                            System.out.println("Local archive deleted: "+tarfilename);
+                        } else {
+                            System.err.println("Failed to delete local archive: "+tarfilename);
+                        }
                     }
                 }
             }
