@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150629.1658>
+ *  Last Modified : <150913.1505>
  *
  *  Description	
  *
@@ -159,6 +159,8 @@ public class GlacierCommand extends BackupVault {
             syncinventory(copyTail(command,1));
         } else if (verb.compareTo("exit") == 0) {
             System.exit(0);
+        } else if (verb.compareTo("help") == 0) {
+            showhelp(copyTail(command,1));
         } else {
             throw new Exception("I don't know how to "+verb);
         }
@@ -837,6 +839,141 @@ public class GlacierCommand extends BackupVault {
         System.err.println("    -dbfile dbfile");
         System.err.println("    -snstopic snstopic");
         System.exit(-1);
+    }
+    private void showhelp(String args[]) {
+        if (args.length < 1) {
+            System.out.println("Available commands: ");
+            System.out.println("");
+            System.out.println("   show vault [vaultname]");
+            System.out.println("      Show vault. vaultname can be a wildcard or ommited (== *)");
+            System.out.println("   show archive vaultname [archivename]");
+            System.out.println("      Show archives in vaultname. archivename can be a wildcard or ommited (== *)");
+            System.out.println("   show jobs vaultname");
+            System.out.println("      List jobs for vaultname.");
+            System.out.println("   show job vaultname jobid");
+            System.out.println("      List job detail");
+            System.out.println("   show uploads vaultname");
+            System.out.println("      List multipart uploads currently in progress");
+            System.out.println("   show parts vaultname uploadid");
+            System.out.println("      List uploaded parts for uploadid");
+            System.out.println("   show inventory vaultname jobid");
+            System.out.println("      Display inventory job output");
+            System.out.println("   ls   (see 'show')");
+            System.out.println("   abort vaultname uploadid");
+            System.out.println("      About the specificed multipart upload");
+            System.out.println("   get archive vaultname archivename");
+            System.out.println("      Start an archive retrieval job");
+            System.out.println("   get inventory vaultname jobid");
+            System.out.println("      Raw output of an inventory retrieval job");
+            System.out.println("   delete vault vaultname");
+            System.out.println("      Delete the specified vault.  It must be empty");
+            System.out.println("   delete archive vaultname archivename");
+            System.out.println("      Delete the specified archive");
+            System.out.println("   rm   (see 'delete')");
+            System.out.println("   inventory vaultname");
+            System.out.println("      Start an inventory retrieval job"); 
+            System.out.println("   treehash filename");
+            System.out.println("      Compute the treehash of a local filename");
+            System.out.println("   syncronize vaultname jobid");
+            System.out.println("      Syncronize a vault's local inventory with a retrieved inventory.");
+            System.out.println("   help [what]");
+            System.out.println("      Get detailed help.");
+            System.out.println("   exit");
+            System.out.println("      Exit the program");
+        } else {
+            String verb = args[0];
+            verb.toLowerCase();
+            if (verb.compareTo("ls") == 0 ||
+                verb.matches("^sh.*")) {
+                if (args.length < 2) {
+                    System.out.println("   show vault [vaultname]");
+                    System.out.println("      Show vault. vaultname can be a wildcard or ommited (== *)");
+                    System.out.println("   show archive vaultname [archivename]");
+                    System.out.println("      Show archives in vaultname. archivename can be a wildcard or ommited (== *)");
+                    System.out.println("   show jobs vaultname");
+                    System.out.println("      List jobs for vaultname.");
+                    System.out.println("   show job vaultname jobid");
+                    System.out.println("      List job detail");
+                    System.out.println("   show uploads vaultname");
+                    System.out.println("      List multipart uploads currently in progress");
+                    System.out.println("   show parts vaultname uploadid");
+                    System.out.println("      List uploaded parts for uploadid");
+                    System.out.println("   show inventory vaultname jobid");
+                    System.out.println("      Display inventory job output");
+                    System.out.println("   ls is an alias for show");
+                } else {
+                    String verb2 = args[1];
+                    verb2.toLowerCase();
+                    if (verb2.matches("^va.*")) {
+                        System.out.println("      Show vault. vaultname can be a wildcard or ommited (== *)");
+                    } else if (verb2.matches("^ar.*")) {
+                        System.out.println("      Show archives in vaultname. archivename can be a wildcard or ommited (== *)");
+                    } else if (verb2.compareTo("jobs") == 0) {
+                        System.out.println("      List jobs for vaultname.");
+                    } else if (verb2.compareTo("job") == 0) {
+                        System.out.println("      List job detail");
+                    } else if (verb2.matches("^up.*")) {
+                        System.out.println("      List multipart uploads currently in progress");
+                    } else if (verb2.matches("^pa.*")) {
+                        System.out.println("      List uploaded parts for uploadid");
+                    } else if (verb2.matches("^inv.*")) {
+                        System.out.println("      Display inventory job output");
+                    } else {
+                        System.out.println("Huh?");
+                    }
+                }
+            } else if (verb.matches("^abort.*")) {
+                System.out.println("      About the specificed multipart upload");
+            } else if (verb.compareTo("get") == 0) {
+                if (args.length < 2) {
+                    System.out.println("   get archive vaultname archivename");
+                    System.out.println("      Start an archive retrieval job");
+                    System.out.println("   get inventory vaultname jobid");
+                    System.out.println("      Raw output of an inventory retrieval job");
+                } else {
+                    String verb2 = args[1];
+                    verb2.toLowerCase();
+                    if (verb2.matches("^arch.*")) {
+                        System.out.println("      Start an archive retrieval job");
+                    } else if (verb2.matches("^inv.*")) {
+                        System.out.println("      Raw output of an inventory retrieval job");
+                    } else {
+                        System.out.println("Huh?");
+                    }
+                }
+            } else if (verb.compareTo("rm") == 0 ||
+                      verb.matches("^del.*")) {
+                if (args.length < 2) {
+                    System.out.println("   delete vault vaultname");
+                    System.out.println("      Delete the specified vault.  It must be empty");
+                    System.out.println("   delete archive vaultname archivename");
+                    System.out.println("      Delete the specified archive");
+                    System.out.println("   rm is an alias for  delete");
+                } else {
+                    String verb2 = args[1];
+                    verb2.toLowerCase();
+                    if (verb2.matches("^va.*")) {
+                        System.out.println("      Delete the specified vault.  It must be empty");
+                    } else if (verb2.matches("^ar.*")) {
+                        System.out.println("      Delete the specified archive");
+                    } else {
+                        System.out.println("Huh?");
+                    }
+                }
+            } else if (verb.matches("^inv.*")) {
+                System.out.println("      Start an inventory retrieval job"); 
+            } else if (verb.matches("^tree.*")) {
+                System.out.println("      Compute the treehash of a local filename");
+            } else if (verb.matches("^sync.*")) {
+                System.out.println("      Syncronize a vault's local inventory with a retrieved inventory.");
+            } else if (verb.compareTo("help") == 0) {
+                System.out.println("      Get detailed help.");
+            } else if (verb.compareTo("exit") == 0) {
+                System.out.println("      Exit the program");
+            } else {
+                System.out.println("Huh?");
+            }
+        }
     }
 }
         
