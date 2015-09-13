@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 23 14:21:22 2015
- *  Last Modified : <150629.1654>
+ *  Last Modified : <150913.1231>
  *
  *  Description	
  *
@@ -108,13 +108,19 @@ class BackupVault extends VaultXMLDB {
     }
     public Element UploadArchive (String vaultName, String archivefile, int partsize) throws Exception {
         File archiveFile = new File(archivefile);
-        AmazonGlacierArchiveOperations.UploadResult result = 
-              AmazonGlacierArchiveOperations.uploadArchive(client,vaultName,
-                        archiveFile,partsize);
-        String date = dateFormatter.format(new Date());
-        Long lsize = new Long(archiveFile.length());
-        String size = lsize.toString();
-        return addarchive(result.location,date.toString(),size,result.sha256treehash,archiveFile.getName());
+        try {
+            AmazonGlacierArchiveOperations.UploadResult result = 
+                  AmazonGlacierArchiveOperations.uploadArchive(client,vaultName,
+                            archiveFile,partsize);
+            String date = dateFormatter.format(new Date());
+            Long lsize = new Long(archiveFile.length());
+            String size = lsize.toString();
+            return addarchive(result.location,date.toString(),size,result.sha256treehash,archiveFile.getName());
+        } catch (Exception e) {
+            System.out.printf("Archive upload failed %s: %s because %s\n",
+                      vaultName,archivefile,e.getMessage());
+            return null;
+        }
     }
     public ListPartsResult ListParts(String vaultName, String uploadId) throws Exception {
         return ListParts(vaultName,uploadId,null,null);
