@@ -2,7 +2,7 @@
 <!--
     Created By    : Robert Heller
     Created       : Mon May 18 09:42:34 2015
-    Last Modified : <151123.0915>
+    Last Modified : <151123.1623>
 
     Description	
     
@@ -58,6 +58,7 @@
       dest="${build}"/>
     <delete dir="${build}/META-INF" />
     <copy file="${src}/com/deepsoft/GlacierCommand.png" todir="${build}/com/deepsoft/" />
+    <copy file="${src}/com/deepsoft/uisupport/questhead.png" todir="${build}/com/deepsoft/uisupport/" />
   </target>
   
   <path id="aws.java.sdk.classpath">

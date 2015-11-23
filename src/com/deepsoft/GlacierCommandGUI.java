@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Fri Nov 20 16:18:48 2015
- *  Last Modified : <151123.1516>
+ *  Last Modified : <151123.1655>
  *
  *  Description	
  *
@@ -123,7 +123,8 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
     private UploadContextMenu umenu;
     private static Image mainImage   = null;
     private JTabbedPane tabPane;
-
+    private InventoryParamsDialog invParams = null;
+    
     public GlacierCommandGUI (File _GlacierVaultDB_File,String _SNSTopic) throws Exception {
         super(_GlacierVaultDB_File);
         GlacierVaultDB_File = _GlacierVaultDB_File;
@@ -156,7 +157,7 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
             }
         }
     }
-    public final String MainHeading = "Glacier";
+    public final String MainHeading = "Glacier Command";
     public void run() {
         try {
             UIManager.setLookAndFeel(
@@ -503,61 +504,22 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
         JobParameters jobParams = new JobParameters()
               .withType("inventory-retrieval")
               .withSNSTopic(SNSTopic);
-        InventoryRetrievalJobInput inventoryParams = null;
-        //int iopt = 1;
-        //while (iopt < args.length) {
-        //    if (args[iopt].compareTo("-startdate") == 0 &&
-        //        (iopt+1) < args.length) {
-        //        if (inventoryParams == null) {
-        //            inventoryParams = new InventoryRetrievalJobInput();
-        //        }
-        //        inventoryParams.setStartDate(args[iopt+1]);
-        //        iopt += 2;
-        //    } else if (args[iopt].compareTo("-enddate") == 0 &&
-        //              (iopt+1) < args.length) {
-        //        if (inventoryParams == null) {
-        //            inventoryParams = new InventoryRetrievalJobInput();
-        //        }
-        //        inventoryParams.setEndDate(args[iopt+1]);
-        //        iopt += 2;
-        //    } else if (args[iopt].compareTo("-marker") == 0 &&
-        //              (iopt+1) < args.length) {
-        //        if (inventoryParams == null) {
-        //            inventoryParams = new InventoryRetrievalJobInput();
-        //        }
-        //        inventoryParams.setMarker(args[iopt+1]);
-        //        iopt += 2;
-        //    } else if (args[iopt].compareTo("-limit") == 0 &&
-        //              (iopt+1) < args.length) {
-        //        if (inventoryParams == null) {
-        //            inventoryParams = new InventoryRetrievalJobInput();
-        //        }
-        //        inventoryParams.setLimit(args[iopt+1]);
-        //        iopt += 2;
-        //    } else if (args[iopt].compareTo("-format") == 0 &&
-        //              (iopt+1) < args.length) {
-        //        jobParams.setFormat(args[iopt+1]);
-        //        iopt += 2;
-        //    } else if (args[iopt].compareTo("-description") == 0 &&
-        //              (iopt+1) < args.length) {
-        //        jobParams.setDescription(args[iopt+1]);
-        //        iopt += 2;
-        //    } else {
-        //        System.err.println("Unknown option: "+args[iopt]+", should be one of -startdate, -enddate, -marker, -limit, -format, -description, or -snstopic");
-        //        Usage();
-        //    }
-        //}
+        //InventoryRetrievalJobInput inventoryParams = null;
+        if (invParams == null) {
+            invParams = new InventoryParamsDialog(mainFrame);
+        }
+        InventoryRetrievalJobInput inventoryParams = invParams.draw();
         if (inventoryParams != null) {
             jobParams.setInventoryRetrievalParameters(inventoryParams);
-        }
-        try {
-            String jobId = InitiateRetrieveInventory(vaultName,jobParams);
-            StringBuilder sb = new StringBuilder();
-            Formatter formatter = new Formatter(sb, Locale.US);
-            formatter.format("<html><body><p>Job created, job id is %s</p></body></html>",jobId);
-            displayPane.setText(sb.toString());
-        } catch (Exception e) {
-            e.printStackTrace();
+            try {
+                String jobId = InitiateRetrieveInventory(vaultName,jobParams);
+                StringBuilder sb = new StringBuilder();
+                Formatter formatter = new Formatter(sb, Locale.US);
+                formatter.format("<html><body><p>Job created, job id is %s</p></body></html>",jobId);
+                displayPane.setText(sb.toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
     private void showarchive(String vault,String archive) {
@@ -579,7 +541,7 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
             Element sha256thelt = (Element) sha256ths.item(0);
             sha256th = sha256thelt.getTextContent();
         }
-        formatter.format("<html><body><h3>%s</h3><dl>",archive);
+        formatter.format("<html><body><h3>%s/%s</h3><dl>",vault,archive);
         formatter.format("<dt>Date:</dt><dd>%s</dd>",a.getAttribute("date"));
         formatter.format("<dt>Size:</dt><dd>%s</dd>",Humansize(size));
         formatter.format("<dt>Tree hash:</dt><dd>%s</dd></dl></body></html>",sha256th);
