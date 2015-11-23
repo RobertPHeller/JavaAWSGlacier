@@ -2,7 +2,7 @@
 <!--
     Created By    : Robert Heller
     Created       : Mon May 18 09:42:34 2015
-    Last Modified : <150526.0817>
+    Last Modified : <151123.0915>
 
     Description	
     
@@ -57,6 +57,7 @@
     <unjar src="${basedir}/../assets/aws-java-sdk-1.7.13/third-party/joda-time-2.2/joda-time-2.2.jar" 
       dest="${build}"/>
     <delete dir="${build}/META-INF" />
+    <copy file="${src}/com/deepsoft/GlacierCommand.png" todir="${build}/com/deepsoft/" />
   </target>
   
   <path id="aws.java.sdk.classpath">

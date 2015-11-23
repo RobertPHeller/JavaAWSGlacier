@@ -7,8 +7,8 @@
  *  Date          : $Date$
  *  Author        : $Author$
  *  Created By    : Robert Heller
- *  Created       : Sun Nov 22 14:38:39 2015
- *  Last Modified : <151123.1147>
+ *  Created       : Mon Nov 23 10:33:57 2015
+ *  Last Modified : <151123.1236>
  *
  *  Description	
  *
@@ -51,46 +51,33 @@ import javax.swing.KeyStroke;
 import java.awt.event.*;
 import com.deepsoft.uisupport.*;
 
-public class VaultContextMenu extends JPopupMenu {
+public class JobContextMenu extends JPopupMenu {
     private ActionListener al;
     private String vault;
+    private String jobid;
     
     public ActionListener getActionListener() {return al;}
     public String getVault() {return vault;}
     public void setVault(String vault) {this.vault = vault;}
-    public VaultContextMenu(ActionListener al, String vault) {
+    public String getJobID() {return jobid;}
+    public void setJobID(String jobid) {this.jobid = jobid;}
+    
+    public JobContextMenu(ActionListener al, String vault, String jobid) {
         this.vault = vault;
+        this.jobid = jobid;
         this.al = al;
         JMenuItem mi;
-        mi = add("Show Archives Of");
-        mi.setAccelerator(KeyStroke.getKeyStroke('A',
+        mi = add("Show");
+        mi.setAccelerator(KeyStroke.getKeyStroke('S',
                   java.awt.event.InputEvent.CTRL_MASK));
-        mi.setMnemonic(java.awt.event.KeyEvent.VK_A);
-        mi.setActionCommand("ShowArchivesOfVault");
+        mi.setMnemonic(java.awt.event.KeyEvent.VK_S);
+        mi.setActionCommand("ShowJob");
         mi.addActionListener(al);
-        mi = add("Show Jobs Of");
-        mi.setAccelerator(KeyStroke.getKeyStroke('J',
+        mi = add("List Job Output");
+        mi.setAccelerator(KeyStroke.getKeyStroke('L',
                   java.awt.event.InputEvent.CTRL_MASK));
-        mi.setMnemonic(java.awt.event.KeyEvent.VK_J);
-        mi.setActionCommand("ShowJobsOfVault");
-        mi.addActionListener(al);
-        mi = add("Delete");
-        mi.setAccelerator(KeyStroke.getKeyStroke('D',
-                  java.awt.event.InputEvent.CTRL_MASK));
-        mi.setMnemonic(java.awt.event.KeyEvent.VK_D);
-        mi.setActionCommand("DeleteVault");
-        mi.addActionListener(al);
-        mi = add("Show Multiple Part Uploads of");
-        mi.setAccelerator(KeyStroke.getKeyStroke('U',
-                  java.awt.event.InputEvent.CTRL_MASK));
-        mi.setMnemonic(java.awt.event.KeyEvent.VK_U);
-        mi.setActionCommand("ShowUploads");
-        mi.addActionListener(al);
-        mi = add("Start Inventory List Job");
-        mi.setAccelerator(KeyStroke.getKeyStroke('I',
-                  java.awt.event.InputEvent.CTRL_MASK));
-        mi.setMnemonic(java.awt.event.KeyEvent.VK_I);
-        mi.setActionCommand("StartInventoryListJob");
+        mi.setMnemonic(java.awt.event.KeyEvent.VK_L);
+        mi.setActionCommand("ListJobOutput");
         mi.addActionListener(al);
     }
 }
