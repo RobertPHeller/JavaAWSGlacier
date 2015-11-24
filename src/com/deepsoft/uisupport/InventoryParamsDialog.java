@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Mon Nov 23 15:49:28 2015
- *  Last Modified : <151123.1701>
+ *  Last Modified : <151124.1502>
  *
  *  Description	
  *
@@ -59,100 +59,72 @@ import com.deepsoft.uisupport.*;
 public class InventoryParamsDialog extends JDialog implements ActionListener {
     private static Image iconImage = null;
     private boolean ok_clicked = false;
+    private LabelEntry startDate, endDate, marker;
+    private LabelSpinBox  limit;
+    private JOptionPane optionPane;
+    private JButton b_ok, b_cancel;
     public InventoryParamsDialog(Frame parent) {
         super(parent,"Inventory Parameters",true);
         
-        if (iconImage == null) {
-            try {
-                iconImage = ImageIO.read(getClass().getResource("questhead.png"));
-            } catch (IOException e) {
-                System.err.println("Couldn't open icon Image");
-                e.printStackTrace();
-            }
-        }
-	GridBagLayout gblay = new GridBagLayout();
-	GridBagConstraints c = new GridBagConstraints();
-	this.setLayout(gblay);
+        // Heading + questions:
+        String headingString = "Inventory Parameters";
+        startDate = new LabelEntry("Start Date: ");
+        endDate =   new LabelEntry("End Date:   ");
+        marker =    new LabelEntry("Marker:     ");
+        limit =   new LabelSpinBox("Limit:      ",new SpinnerNumberModel(0,0,100000,1));
+        Object[] header_questions = {headingString, startDate, endDate, marker, limit};
         
-        ImageIcon dialogIcon = new ImageIcon(iconImage);
-        JLabel dialogIconLabel = new JLabel(dialogIcon);
-        JLabel dialogHeading = new JLabel("Inventory Parameters");
-	dialogHeading.setFont(new Font("Serif",Font.BOLD,16));
-        c.anchor = GridBagConstraints.WEST;
-        c.ipadx = 5;
-        add(dialogIconLabel,c);
-        c.gridwidth = GridBagConstraints.REMAINDER;
-        c.anchor = GridBagConstraints.CENTER;
-        add(dialogHeading,c);
+        // Option buttons:
+        b_ok = new JButton("OK");
+        b_ok.addActionListener(this);
+        b_ok.setActionCommand("OK");
+        b_cancel = new JButton("Cancel");
+        b_cancel.addActionListener(this);
+        b_cancel.setActionCommand("Cancel");
+        Object[] option_buttons = {b_ok,b_cancel};
         
-        c.ipadx = 0;
+        optionPane = new JOptionPane(header_questions,
+                  JOptionPane.QUESTION_MESSAGE,
+                  JOptionPane.YES_NO_OPTION,
+                  null,
+                  option_buttons,
+                  b_ok);
         
-        
-        
-        //int iopt = 1;
-        //while (iopt < args.length) {
-        //    if (args[iopt].compareTo("-startdate") == 0 &&
-        //        (iopt+1) < args.length) {
-        //        if (inventoryParams == null) {
-        //            inventoryParams = new InventoryRetrievalJobInput();
-        //        }
-        //        inventoryParams.setStartDate(args[iopt+1]);
-        //        iopt += 2;
-        //    } else if (args[iopt].compareTo("-enddate") == 0 &&
-        //              (iopt+1) < args.length) {
-        //        if (inventoryParams == null) {
-        //            inventoryParams = new InventoryRetrievalJobInput();
-        //        }
-        //        inventoryParams.setEndDate(args[iopt+1]);
-        //        iopt += 2;
-        //    } else if (args[iopt].compareTo("-marker") == 0 &&
-        //              (iopt+1) < args.length) {
-        //        if (inventoryParams == null) {
-        //            inventoryParams = new InventoryRetrievalJobInput();
-        //        }
-        //        inventoryParams.setMarker(args[iopt+1]);
-        //        iopt += 2;
-        //    } else if (args[iopt].compareTo("-limit") == 0 &&
-        //              (iopt+1) < args.length) {
-        //        if (inventoryParams == null) {
-        //            inventoryParams = new InventoryRetrievalJobInput();
-        //        }
-        //        inventoryParams.setLimit(args[iopt+1]);
-        //        iopt += 2;
-        //    } else if (args[iopt].compareTo("-format") == 0 &&
-        //              (iopt+1) < args.length) {
-        //        jobParams.setFormat(args[iopt+1]);
-        //        iopt += 2;
-        //    } else if (args[iopt].compareTo("-description") == 0 &&
-        //              (iopt+1) < args.length) {
-        //        jobParams.setDescription(args[iopt+1]);
-        //        iopt += 2;
-        //    } else {
-        //        System.err.println("Unknown option: "+args[iopt]+", should be one of -startdate, -enddate, -marker, -limit, -format, -description, or -snstopic");
-        //        Usage();
-        //    }
-        //}
-        
-
-        c.fill = GridBagConstraints.HORIZONTAL;c.weightx = 1.0;
-        c.gridwidth = GridBagConstraints.REMAINDER;
-
-        JPanel buttons = new JPanel();
-        BoxLayout buttonslayout = new BoxLayout(buttons,BoxLayout.X_AXIS);
-        JButton b = new JButton("OK");
-        b.addActionListener(this);
-        b.setActionCommand("OK");
-        buttons.add(b,buttonslayout);
-        b = new JButton("Cancel");
-        b.addActionListener(this);
-        b.setActionCommand("Cancel");
-        buttons.add(b,buttonslayout);
-        add(buttons,c);
-        setSize(gblay.preferredLayoutSize(getContentPane()));
+        setContentPane(optionPane);
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+                  public void windowClosing(WindowEvent we) {
+                  ok_clicked = false;
+                  setVisible(false);
+              }
+              });
+        Dimension psize = getPreferredSize();
+        System.err.println("*** InventoryParamsDialog.InventoryParamsDialog(): psize = "+psize);
+        psize.setSize(psize.getWidth()+35,psize.getHeight()+35);
+        setSize(psize);
+        setLocationRelativeTo(parent);
     }
     
     public InventoryRetrievalJobInput getParams() {
-        return null;
+        InventoryRetrievalJobInput result = new InventoryRetrievalJobInput();
+        String startdate = startDate.getText();
+        if (startdate != null || !startdate.equals("")) {
+            result.setStartDate(startdate);
+        }
+        String enddate = endDate.getText();
+        if (enddate != null || !enddate.equals("")) {
+            result.setEndDate(enddate);
+        }
+        String markerstr = marker.getText();
+        if (markerstr != null || !markerstr.equals("")) {
+            result.setMarker(markerstr);
+        }
+        Integer limitval = (Integer) limit.getValue();
+        if (limitval > 0) {
+            result.setLimit(limitval.toString());
+        }
+        System.err.println("*** InventoryParamsDialog.getParams(): result is "+result);
+        return result;
     }
     
     public void actionPerformed(ActionEvent e) {
@@ -166,6 +138,7 @@ public class InventoryParamsDialog extends JDialog implements ActionListener {
     }
     
     public InventoryRetrievalJobInput draw() {
+        ok_clicked = false;
         setVisible(true);
         if (ok_clicked) {
             return getParams();
