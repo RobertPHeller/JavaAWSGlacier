@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Fri Nov 20 16:18:48 2015
- *  Last Modified : <151123.1655>
+ *  Last Modified : <151124.1650>
  *
  *  Description	
  *
@@ -510,7 +510,16 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
         }
         InventoryRetrievalJobInput inventoryParams = invParams.draw();
         if (inventoryParams != null) {
-            jobParams.setInventoryRetrievalParameters(inventoryParams);
+            if (inventoryParams.getStartDate() != null && 
+                !inventoryParams.getStartDate().equals("") &&
+                inventoryParams.getEndDate() != null &&
+                !inventoryParams.getEndDate().equals("") &&
+                inventoryParams.getLimit() != null &&
+                !inventoryParams.getLimit().equals("") &&
+                inventoryParams.getMarker() != null &&
+                !inventoryParams.getMarker().equals("")) {
+                jobParams.setInventoryRetrievalParameters(inventoryParams);
+            }
             try {
                 String jobId = InitiateRetrieveInventory(vaultName,jobParams);
                 StringBuilder sb = new StringBuilder();
@@ -834,8 +843,8 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
             TreePath selPath = jobTree.getPathForLocation(e.getX(), e.getY());
             switch (selPath.getPathCount()) {
             case 1: return;
-            case 2: jobContextMenu(selPath.getPathComponent(1).toString(),  
-                      selPath.getPathComponent(2).toString(),e.getComponent(),
+            case 2: jobContextMenu(selPath.getPathComponent(0).toString(),  
+                      selPath.getPathComponent(1).toString(),e.getComponent(),
                       e.getX(), e.getY());
             }
         } else if (t == uploadTree) {
@@ -843,8 +852,8 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
             TreePath selPath = uploadTree.getPathForLocation(e.getX(), e.getY());
             switch (selPath.getPathCount()) {
             case 1: return;
-            case 2: uploadContextMenu(selPath.getPathComponent(1).toString(),  
-                      selPath.getPathComponent(2).toString(),e.getComponent(),
+            case 2: uploadContextMenu(selPath.getPathComponent(0).toString(),  
+                      selPath.getPathComponent(1).toString(),e.getComponent(),
                       e.getX(), e.getY());
             }
         } else {
