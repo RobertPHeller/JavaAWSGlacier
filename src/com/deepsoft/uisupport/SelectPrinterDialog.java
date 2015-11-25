@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Wed Nov 25 09:28:06 2015
- *  Last Modified : <151125.1148>
+ *  Last Modified : <151125.1549>
  *
  *  Description	
  *
@@ -44,7 +44,6 @@ package com.deepsoft.uisupport;
 
 import java.io.*;
 import javax.swing.*;
-import javax.swing.text.*;
 import javax.swing.event.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -125,7 +124,7 @@ public class SelectPrinterDialog extends JDialog implements ActionListener {
         }
     }
     
-    public PrintService draw(DocFlavor flavor, javax.print.attribute.AttributeSet attributes) {
+    public PrintService draw(DocFlavor flavor, AttributeSet attributes) {
         print_clicked = false;
         System.err.println("*** SelectPrinterDialog.draw(): flavor is "+flavor);
         PrintService printers[] = PrintServiceLookup.lookupPrintServices(flavor, attributes);

@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Fri Nov 20 16:18:48 2015
- *  Last Modified : <151125.1146>
+ *  Last Modified : <151125.1602>
  *
  *  Description	
  *
@@ -796,19 +796,33 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
         }
     }
     private void PrintDisplayPane() {
-        DocFlavor format = DocFlavor.INPUT_STREAM.POSTSCRIPT;
-        if (pdialog == null) {
-            pdialog = new SelectPrinterDialog(mainFrame);
-        }
-        PrintService p = pdialog.draw(format,null);
-        if (p == null) return;
-        DocPrintJob job = p.createPrintJob();
-        Doc myDoc = new SimpleDoc(new PostscriptInputStreamFromHTML(displayPane.getText()),format,null);
+        InputStream PSStream = new PostscriptInputStreamFromHTML(displayPane.getText());
+
         try {
-            job.print(myDoc, null);
-        } catch (PrintException pe) {
-            pe.printStackTrace();
-        }        
+            OutputStream PSTemp = new FileOutputStream("test.ps");
+            byte buffer[] = new byte[4096];
+            int  bytesread;
+            while ((bytesread = PSStream.read(buffer,0,4096)) >= 0) {
+                PSTemp.write(buffer,0,bytesread);
+            }
+            PSTemp.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        //DocFlavor format = DocFlavor.INPUT_STREAM.POSTSCRIPT;
+        //if (pdialog == null) {
+        //    pdialog = new SelectPrinterDialog(mainFrame);
+        //}
+        //PrintService p = pdialog.draw(format,null);
+        //if (p == null) return;
+        //DocPrintJob job = p.createPrintJob();
+        //Doc myDoc = new SimpleDoc(PSStream,format,null);
+        //try {
+        //    job.print(myDoc, null);
+        //} catch (PrintException pe) {
+        //    pe.printStackTrace();
+        //}        
     }
     private boolean getyesno(String question) {
         int answer = JOptionPane.showConfirmDialog(mainFrame,question,
