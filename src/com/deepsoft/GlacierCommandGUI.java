@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Fri Nov 20 16:18:48 2015
- *  Last Modified : <151124.1650>
+ *  Last Modified : <151125.1146>
  *
  *  Description	
  *
@@ -106,6 +106,8 @@ import javax.swing.ImageIcon;
 
 import java.awt.event.*;
 
+import javax.print.*;
+
 public class GlacierCommandGUI extends BackupVault implements Runnable, ActionListener, WindowListener, MouseListener {
     private static final Pattern vaultARNPattern = Pattern.compile("^arn:aws:glacier:([^:]+):(\\d+):vaults/([^/]+)$");
     String SNSTopic;
@@ -124,6 +126,7 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
     private static Image mainImage   = null;
     private JTabbedPane tabPane;
     private InventoryParamsDialog invParams = null;
+    private SelectPrinterDialog pdialog = null;
     
     public GlacierCommandGUI (File _GlacierVaultDB_File,String _SNSTopic) throws Exception {
         super(_GlacierVaultDB_File);
@@ -263,7 +266,7 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
         if (e.getActionCommand().equals("Exit")) {
             CarefulExit();
         } else if (e.getActionCommand().equals("Print")) {
-            //PrintWhatDialog();
+            PrintDisplayPane();
         } else if (e.getActionCommand().equals("ShowArchivesOfVault")) {
             JMenuItem mi = (JMenuItem) e.getSource();
             VaultContextMenu v = (VaultContextMenu) mi.getParent();
@@ -791,6 +794,21 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
                 e.printStackTrace();
             }
         }
+    }
+    private void PrintDisplayPane() {
+        DocFlavor format = DocFlavor.INPUT_STREAM.POSTSCRIPT;
+        if (pdialog == null) {
+            pdialog = new SelectPrinterDialog(mainFrame);
+        }
+        PrintService p = pdialog.draw(format,null);
+        if (p == null) return;
+        DocPrintJob job = p.createPrintJob();
+        Doc myDoc = new SimpleDoc(new PostscriptInputStreamFromHTML(displayPane.getText()),format,null);
+        try {
+            job.print(myDoc, null);
+        } catch (PrintException pe) {
+            pe.printStackTrace();
+        }        
     }
     private boolean getyesno(String question) {
         int answer = JOptionPane.showConfirmDialog(mainFrame,question,
