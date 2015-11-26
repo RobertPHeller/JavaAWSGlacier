@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Wed Nov 25 11:07:59 2015
- *  Last Modified : <151125.1649>
+ *  Last Modified : <151125.1926>
  *
  *  Description	
  *
@@ -61,13 +61,13 @@ public class PostscriptInputStreamFromHTML extends InputStream {
     private static ParserDelegator parsedelegator = null;
     public boolean markSupported() {return false;}
     public int available() {
-        System.err.println("*** PostscriptInputStreamFromHTML.available(): postscriptDoc.length() is "+postscriptDoc.length()+", position is "+position);
+        //System.err.println("*** PostscriptInputStreamFromHTML.available(): postscriptDoc.length() is "+postscriptDoc.length()+", position is "+position);
         int avail = postscriptDoc.length() - position;
-        System.err.println("*** PostscriptInputStreamFromHTML.available(): avail is "+avail);
+        //System.err.println("*** PostscriptInputStreamFromHTML.available(): avail is "+avail);
         return avail;
     }
     public int read() {
-        System.err.println("*** PostscriptInputStreamFromHTML.read(): postscriptDoc.length() is "+postscriptDoc.length()+", position is "+position);
+        //System.err.println("*** PostscriptInputStreamFromHTML.read(): postscriptDoc.length() is "+postscriptDoc.length()+", position is "+position);
         if (position < postscriptDoc.length()) {
             return postscriptDoc.charAt(position++);
         } else {
@@ -80,11 +80,6 @@ public class PostscriptInputStreamFromHTML extends InputStream {
         postscriptDoc = new StringBuilder();
         position = 0;
         Formatter formatter = new Formatter(postscriptDoc, Locale.US);
-        formatter.format("%%!PS-Adobe-2.0\n%%%%Creator: PostscriptInputStreamFromHTML\n%%%%Title: PostscriptInputStreamFromHTML\n");
-        formatter.format("%%%%CreationDate: %s\n",new Date().toString());
-        formatter.format("%%%%Pages: AtEnd\n");
-        formatter.format("%%%%EndComments\n");
-        formatter.format("%%%%EndProlog\n");
         StringReader in = new StringReader(HTMLText);
 
         try {
@@ -93,7 +88,6 @@ public class PostscriptInputStreamFromHTML extends InputStream {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        formatter.format("%%%%EOF\n");
     }
     class HTMLCallbacks extends HTMLEditorKit.ParserCallback {
         private StringBuilder postscriptDoc;
@@ -106,16 +100,38 @@ public class PostscriptInputStreamFromHTML extends InputStream {
         public void handleText(char[] data, int pos) {
             System.err.println("*** HTMLCallbacks.handleText(): data = "+data);
             String text = new String(data);
-             System.err.println("*** HTMLCallbacks.handleText(): text = '"+text+"'");
+            System.err.println("*** HTMLCallbacks.handleText(): text = '"+text+"'");
+            formatter.format("gsave (%s) show grestore 0 lineheight 1.2 mul neg rmoveto\n",text);
+            
         }
         public void handleStartTag(HTML.Tag t,
                   MutableAttributeSet a,
                   int pos) {
             System.err.println("*** HTMLCallbacks.handleStartTag(): t = "+t);
+            if (t == HTML.Tag.BODY) {
+                formatter.format("%%!PS-Adobe-2.0\n%%%%Creator: PostscriptInputStreamFromHTML\n%%%%Title: PostscriptInputStreamFromHTML\n");
+                formatter.format("%%%%CreationDate: %s\n",new Date().toString());
+                formatter.format("%%%%Pages: 1\n");
+                formatter.format("%%%%BoundingBox: 0 0 612 792\n");
+                formatter.format("%%%%EndComments\n");
+                formatter.format("%%%%BeginProlog\n");
+                formatter.format("/inch {72 mul} def\n");
+                formatter.format("/lineheight {12} def\n");
+                formatter.format("%%%%EndProlog\n");
+                formatter.format("%%%%Page: 1 1\n");
+                formatter.format("/Times-Roman findfont lineheight scalefont setfont\n");
+                formatter.format("1 inch 10 inch moveto\n");
+                
+            }
         }
         public void handleEndTag(HTML.Tag t,
                   int pos) {
             System.err.println("*** HTMLCallbacks.handleEndTag(): t = "+t);
+            if (t == HTML.Tag.BODY) {
+                formatter.format("showpage\n");
+                formatter.format("%%%%Trailer\n");
+                formatter.format("%%%%EOF\n");
+            }
         }
         public void handleSimpleTag(HTML.Tag t,
                   MutableAttributeSet a,
