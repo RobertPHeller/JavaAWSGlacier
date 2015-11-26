@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Thu Nov 26 11:30:25 2015
- *  Last Modified : <151126.1233>
+ *  Last Modified : <151126.1818>
  *
  *  Description	
  *
@@ -370,65 +370,68 @@ public class PrintToFilePrintJob implements CancelablePrintJob {
           }
     
     public void printableJob(Printable printable) throws PrintException {
-        try {
-            synchronized(this) {
-                if (job != null) { // shouldn't happen
-                    throw new PrintException("already printing");
-                } else {
-                    job = new PSPrinterJob();
-                }
-            }
-            job.setPrintService(getPrintService());
-            job.setCopies(copies);
-            job.setJobName(jobName);
-            PageFormat pf = new PageFormat();
-            if (mediaSize != null) {
-                Paper p = new Paper();
-                p.setSize(mediaSize.getX(MediaSize.INCH)*72.0,
-                          mediaSize.getY(MediaSize.INCH)*72.0);
-                p.setImageableArea(72.0, 72.0, p.getWidth()-144.0,
-                          p.getHeight()-144.0);
-                pf.setPaper(p);
-            }
-            if (orient == OrientationRequested.REVERSE_LANDSCAPE) {
-                pf.setOrientation(PageFormat.REVERSE_LANDSCAPE);
-            } else if (orient == OrientationRequested.LANDSCAPE) {
-                pf.setOrientation(PageFormat.LANDSCAPE);
-            }
-            job.setPrintable(printable, pf);
-            job.print();
-            notifyEvent(PrintJobEvent.JOB_COMPLETE);
-            return;
-        } catch (PrinterException pe) {
-            notifyEvent(PrintJobEvent.JOB_FAILED);
-            throw new PrintException(pe);
-        } finally {
-            printReturned = true;
-        }
+        throw new PrintException("Not Implemented yet");
+        //try {
+        //    synchronized(this) {
+        //        if (job != null) { // shouldn't happen
+        //            throw new PrintException("already printing");
+        //        } else {
+        //            job = new PSPrinterJob();
+        //        }
+        //    }
+        //    job.setPrintService(getPrintService());
+        //    job.setCopies(copies);
+        //    job.setJobName(jobName);
+        //    PageFormat pf = new PageFormat();
+        //    if (mediaSize != null) {
+        //        Paper p = new Paper();
+        //        p.setSize(mediaSize.getX(MediaSize.INCH)*72.0,
+        //                  mediaSize.getY(MediaSize.INCH)*72.0);
+        //        p.setImageableArea(72.0, 72.0, p.getWidth()-144.0,
+        //                  p.getHeight()-144.0);
+        //        pf.setPaper(p);
+        //    }
+        //    if (orient == OrientationRequested.REVERSE_LANDSCAPE) {
+        //        pf.setOrientation(PageFormat.REVERSE_LANDSCAPE);
+        //    } else if (orient == OrientationRequested.LANDSCAPE) {
+        //        pf.setOrientation(PageFormat.LANDSCAPE);
+        //    }
+        //    job.setPrintable(printable, pf);
+        //    job.print();
+        //    notifyEvent(PrintJobEvent.JOB_COMPLETE);
+        //    return;
+        //} catch (PrinterException pe) {
+        //    notifyEvent(PrintJobEvent.JOB_FAILED);
+        //    throw new PrintException(pe);
+        //} finally {
+        //    printReturned = true;
+        //}
     }
     
     public void pageableJob(Pageable pageable) throws PrintException {
-        try {
-            synchronized(this) {
-                if (job != null) { // shouldn't happen
-                    throw new PrintException("already printing");
-                } else {
-                    job = new PSPrinterJob();
-                }
-            }
-            job.setPrintService(getPrintService());
-            job.setCopies(copies);
-            job.setJobName(jobName);
-            job.setPageable(pageable);
-            job.print();
-            notifyEvent(PrintJobEvent.JOB_COMPLETE);
-            return;
-        } catch (PrinterException pe) {
-            notifyEvent(PrintJobEvent.JOB_FAILED);
-            throw new PrintException(pe);
-        } finally {
-            printReturned = true;
-        }
+        throw new PrintException("not implemented yet");
+        //try {
+        //    synchronized(this) {
+        //        if (job != null) { // shouldn't happen
+        //            throw new PrintException("already printing");
+        //        } else {
+        //            job = new PSPrinterJob();
+        //            
+        //        }
+        //    }
+        //    job.setPrintService(getPrintService());
+        //    job.setCopies(copies);
+        //    job.setJobName(jobName);
+        //    job.setPageable(pageable);
+        //    job.print();
+        //    notifyEvent(PrintJobEvent.JOB_COMPLETE);
+        //    return;
+        //} catch (PrinterException pe) {
+        //    notifyEvent(PrintJobEvent.JOB_FAILED);
+        //    throw new PrintException(pe);
+        //} finally {
+        //    printReturned = true;
+        //}
     }
     
     /* There's some inefficiency here as the job set is created even though

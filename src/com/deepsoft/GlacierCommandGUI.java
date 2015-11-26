@@ -803,6 +803,19 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
         } catch (Exception e) {
             e.printStackTrace();
         }
+        //InputStream PSStream = new PostscriptInputStreamFromHTML(displayPane.getText());
+
+        //try {
+        //    OutputStream PSTemp = new FileOutputStream("test.ps");
+        //    byte buffer[] = new byte[4096];
+        //    int  bytesread;
+        //    while ((bytesread = PSStream.read(buffer,0,4096)) >= 0) {
+        //        PSTemp.write(buffer,0,bytesread);
+        //    }
+        //    PSTemp.close();
+        //} catch (Exception e) {
+        //    e.printStackTrace();
+        //}
         
         //InputStream PSStream = new PostscriptInputStreamFromHTML(displayPane.getText());
 
