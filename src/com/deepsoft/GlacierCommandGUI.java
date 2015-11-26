@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Fri Nov 20 16:18:48 2015
- *  Last Modified : <151125.1934>
+ *  Last Modified : <151126.0909>
  *
  *  Description	
  *
@@ -259,6 +259,8 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
         amenu = new ArchiveContextMenu(this,"","");
         jmenu = new JobContextMenu(this,"","");
         umenu = new UploadContextMenu(this,"","");
+        PrintServiceLookup.registerServiceProvider(
+                  new PrintToFileServiceProvider());
     }
     
     public void actionPerformed (ActionEvent e) {
