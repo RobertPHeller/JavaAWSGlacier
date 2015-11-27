@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Fri Nov 20 16:18:48 2015
- *  Last Modified : <151127.1129>
+ *  Last Modified : <151127.1137>
  *
  *  Description	
  *
@@ -133,7 +133,6 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
     private static Image mainImage   = null;
     private JTabbedPane tabPane;
     private InventoryParamsDialog invParams = null;
-    private SelectPrinterDialog pdialog = null;
     
     public GlacierCommandGUI (File _GlacierVaultDB_File,String _SNSTopic) throws Exception {
         super(_GlacierVaultDB_File);
