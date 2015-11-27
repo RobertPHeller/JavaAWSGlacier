@@ -2,7 +2,7 @@
 <!--
     Created By    : Robert Heller
     Created       : Mon May 18 09:42:34 2015
-    Last Modified : <151126.1118>
+    Last Modified : <151127.1102>
 
     Description	
     
@@ -56,6 +56,22 @@
       dest="${build}"/>
     <unjar src="${basedir}/../assets/aws-java-sdk-1.7.13/third-party/joda-time-2.2/joda-time-2.2.jar" 
       dest="${build}"/>
+    <unjar src="${basedir}/../assets/SmartJReport_2.2_09/jai_codec.jar" 
+      dest="${build}"/>
+    <unjar src="${basedir}/../assets/SmartJReport_2.2_09/jai_core.jar" 
+      dest="${build}"/>
+    <unjar src="${basedir}/../assets/SmartJReport_2.2_09/poi.jar" 
+      dest="${build}"/>
+    <unjar src="${basedir}/../assets/SmartJReport_2.2_09/smartjcommon.jar" 
+      dest="${build}"/>
+    <unjar src="${basedir}/../assets/SmartJReport_2.2_09/smartjpdfwriter.jar" 
+      dest="${build}"/>
+    <unjar src="${basedir}/../assets/SmartJReport_2.2_09/smartjpdfwriter_license.jar" 
+      dest="${build}"/>
+    <unjar src="${basedir}/../assets/SmartJReport_2.2_09/smartjreport.jar" 
+      dest="${build}"/>
+    <unjar src="${basedir}/../assets/SmartJReport_2.2_09/smartjreport_license.jar" 
+      dest="${build}"/>
     <delete dir="${build}/META-INF" />
     <copy file="${src}/com/deepsoft/GlacierCommand.png" todir="${build}/com/deepsoft/" />
   </target>
@@ -63,13 +79,15 @@
   <path id="aws.java.sdk.classpath">
     <fileset dir="${basedir}/../assets/aws-java-sdk-1.7.13/third-party" includes="**/*.jar"/>
     <fileset dir="${basedir}/../assets/aws-java-sdk-1.7.13/lib" includes="**/*.jar"/>
+    <fileset dir="${basedir}/../assets/SmartJReport_2.2_09/" includes="*.jar" />
     <pathelement location="${build}" />
   </path>
   
   <target name="compile" depends="init"
     description="compile the source " >
     <!-- Compile the java code from ${src} into ${build} -->
-    <javac srcdir="${src}" destdir="${build}" classpathref="aws.java.sdk.classpath">
+    <javac srcdir="${src}" destdir="${build}" 
+      classpathref="aws.java.sdk.classpath" >
       <!-- compilerarg value="-Xlint:unchecked" / -->
     </javac>
   </target>

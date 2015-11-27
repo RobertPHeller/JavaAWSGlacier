@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Fri Nov 20 16:18:48 2015
- *  Last Modified : <151126.0909>
+ *  Last Modified : <151127.1129>
  *
  *  Description	
  *
@@ -84,7 +84,7 @@ import javax.swing.event.TreeSelectionListener;
 import javax.swing.JTabbedPane;
 import javax.swing.JCheckBox;
 import javax.swing.JMenuItem;
-import javax.swing.JEditorPane;
+import javax.swing.JTextPane;
 import javax.swing.JSplitPane;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -103,10 +103,17 @@ import java.awt.event.MouseListener;
 import java.awt.Image;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
-
+import java.awt.print.PageFormat;
+import java.awt.print.Pageable;
 import java.awt.event.*;
 
 import javax.print.*;
+import com.activetree.common.resource.AtImageList;
+import com.activetree.common.resource.AtConstants;
+import com.activetree.common.swing.AtInsetsPanel;
+import com.activetree.common.report.printer.JavaDocumentPrinter;
+import com.activetree.common.report.PageNoPainter;
+import com.activetree.common.conversion.ConversionFactory;
 
 public class GlacierCommandGUI extends BackupVault implements Runnable, ActionListener, WindowListener, MouseListener {
     private static final Pattern vaultARNPattern = Pattern.compile("^arn:aws:glacier:([^:]+):(\\d+):vaults/([^/]+)$");
@@ -118,7 +125,7 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
     private JTree archiveTree = null;
     private JTree jobTree = null;
     private JTree uploadTree = null;
-    private JEditorPane displayPane = null;
+    private JTextPane displayPane = null;
     private VaultContextMenu vmenu;
     private ArchiveContextMenu amenu;
     private JobContextMenu jmenu;
@@ -195,6 +202,9 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
         optionsPanel.setPreferredSize(new Dimension(200,50));
         optionsPanel.setLayout(new FlowLayout());
         
+        JButton exportButton = new JButton("Export to PDF");
+        exportButton.setActionCommand("ExportToPDF");
+        exportButton.addActionListener(this);
         JButton printButton = new JButton("Print");
         printButton.setActionCommand("Print");
         printButton.addActionListener(this);
@@ -202,6 +212,7 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
         exitButton.setActionCommand("Exit");
         exitButton.addActionListener(this);
         
+        optionsPanel.add(exportButton);
         optionsPanel.add(printButton);
         optionsPanel.add(exitButton);
 
@@ -237,7 +248,7 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
         archiveTreeView.setMinimumSize(minimumSize);
         //archiveTreeView.setPreferredSize(preferedSize);
         tabPane.add("Vault Tree",archiveTreeView);
-        displayPane = new JEditorPane();
+        displayPane = new JTextPane();
         displayPane.setEditable(false);
         displayPane.setContentType("text/html");
         JScrollPane displayView = new JScrollPane(displayPane);
@@ -259,8 +270,8 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
         amenu = new ArchiveContextMenu(this,"","");
         jmenu = new JobContextMenu(this,"","");
         umenu = new UploadContextMenu(this,"","");
-        PrintServiceLookup.registerServiceProvider(
-                  new PrintToFileServiceProvider());
+        //PrintServiceLookup.registerServiceProvider(
+        //          new PrintToFileServiceProvider());
     }
     
     public void actionPerformed (ActionEvent e) {
@@ -269,6 +280,8 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
             CarefulExit();
         } else if (e.getActionCommand().equals("Print")) {
             PrintDisplayPane();
+        } else if (e.getActionCommand().equals("ExportToPDF")) {
+            ExportDisplayPane();
         } else if (e.getActionCommand().equals("ShowArchivesOfVault")) {
             JMenuItem mi = (JMenuItem) e.getSource();
             VaultContextMenu v = (VaultContextMenu) mi.getParent();
@@ -803,47 +816,21 @@ public class GlacierCommandGUI extends BackupVault implements Runnable, ActionLi
         } catch (Exception e) {
             e.printStackTrace();
         }
-        //InputStream PSStream = new PostscriptInputStreamFromHTML(displayPane.getText());
-
-        //try {
-        //    OutputStream PSTemp = new FileOutputStream("test.ps");
-        //    byte buffer[] = new byte[4096];
-        //    int  bytesread;
-        //    while ((bytesread = PSStream.read(buffer,0,4096)) >= 0) {
-        //        PSTemp.write(buffer,0,bytesread);
-        //    }
-        //    PSTemp.close();
-        //} catch (Exception e) {
-        //    e.printStackTrace();
-        //}
-        
-        //InputStream PSStream = new PostscriptInputStreamFromHTML(displayPane.getText());
-
-        //try {
-        //    OutputStream PSTemp = new FileOutputStream("test.ps");
-        //    byte buffer[] = new byte[4096];
-        //    int  bytesread;
-        //    while ((bytesread = PSStream.read(buffer,0,4096)) >= 0) {
-        //        PSTemp.write(buffer,0,bytesread);
-        //    }
-        //    PSTemp.close();
-        //} catch (Exception e) {
-        //    e.printStackTrace();
-        //}
-        
-        //DocFlavor format = DocFlavor.INPUT_STREAM.POSTSCRIPT;
-        //if (pdialog == null) {
-        //    pdialog = new SelectPrinterDialog(mainFrame);
-        //}
-        //PrintService p = pdialog.draw(format,null);
-        //if (p == null) return;
-        //DocPrintJob job = p.createPrintJob();
-        //Doc myDoc = new SimpleDoc(PSStream,format,null);
-        //try {
-        //    job.print(myDoc, null);
-        //} catch (PrintException pe) {
-        //    pe.printStackTrace();
-        //}        
+    }
+    
+    private void ExportDisplayPane() {
+        OutputStream pdfOutputStream = CloseableJFrame.getOutputStream(mainFrame, "pdf", "PDF Files", AtConstants.OPEN);
+        JavaDocumentPrinter docPrinter = new JavaDocumentPrinter();
+        docPrinter.setPageHeaderFooterListener(new SimpleHeaderFooterRenderer("GlacierCommand GUI","Copyright (c) Deepwoods Software."));
+        PageFormat defaultPageFormat = new PageFormat();
+        docPrinter.setPageFormat(defaultPageFormat);
+        Pageable pages = docPrinter.getPageable(displayPane, PageNoPainter.PAGE_NONE);
+        try {
+            ConversionFactory.saveAsPdf(pdfOutputStream, pages);
+            System.out.println("Successfully saved as a PDF file.");
+        }catch(Throwable t) {
+            t.printStackTrace();
+        }
     }
     private boolean getyesno(String question) {
         int answer = JOptionPane.showConfirmDialog(mainFrame,question,

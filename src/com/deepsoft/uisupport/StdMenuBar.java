@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Fri Nov 20 16:45:50 2015
- *  Last Modified : <151123.0839>
+ *  Last Modified : <151127.1058>
  *
  *  Description	
  *
@@ -82,6 +82,11 @@ public class StdMenuBar extends JMenuBar {
         mi.setMnemonic(java.awt.event.KeyEvent.VK_A);
         mi.addActionListener(al);
         mi.setEnabled(false);
+        mi = fileMenu.add("Export to PDF...");
+        mi.setAccelerator(KeyStroke.getKeyStroke('E',java.awt.event.InputEvent.CTRL_MASK));
+        mi.setActionCommand("ExportToPDF");
+        mi.setMnemonic(java.awt.event.KeyEvent.VK_E);
+        mi.addActionListener(al);
         mi = fileMenu.add("Print...");
         mi.setAccelerator(KeyStroke.getKeyStroke('P',java.awt.event.InputEvent.CTRL_MASK));
         mi.setActionCommand("Print");
