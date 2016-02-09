@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun Jun 21 08:34:02 2015
- *  Last Modified : <150624.1544>
+ *  Last Modified : <160209.0951>
  *
  *  Description	
  *
@@ -87,33 +87,55 @@ public class HandleNotification extends BackupVault {
         }
     }
     private void GetArchive(JSONObject job) throws Exception {
+        //System.err.println("*** HandleNotification.GetArchive("+job+")");
         String archiveid = job.getString("ArchiveId");
+        //System.err.println("*** HandleNotification.GetArchive(): archiveid = "+archiveid);
         String jobid     = job.getString("JobId");
+        //System.err.println("*** HandleNotification.GetArchive(): jobid = "+jobid);
         String vaultARN  = job.getString("VaultARN");
+        //System.err.println("*** HandleNotification.GetArchive(): vaultARN = "+vaultARN);
         String vault = "";
         Matcher match = vaultARNPattern.matcher(vaultARN);
         if (match.matches()) {
             vault = match.group(3);
+            //System.err.println("*** HandleNotification.GetArchive(): vault = "+vault);
         } else {
             throw new Exception("Cannot parse vaultARN: "+vaultARN);
         }
         String treehash = job.getString("SHA256TreeHash");
         if (treehash == null) treehash = "";
+        //System.err.println("*** HandleNotification.GetArchive(): treehash = "+treehash);
         String wholetreehash = job.getString("ArchiveSHA256TreeHash");
+        //System.err.println("*** HandleNotification.GetArchive(): wholetreehash = "+wholetreehash);
         long size = job.getLong("ArchiveSizeInBytes");
+        //System.err.println("*** HandleNotification.GetArchive(): size = "+size);
         String range = job.getString("RetrievalByteRange");
+        //System.err.println("*** HandleNotification.GetArchive(): range = "+range);
         match = RangeSplitPattern.matcher(range);
         String psuff = "";
         if (match.matches()) {
-            long first = Long.getLong(match.group(1));
-            long last  = Long.getLong(match.group(2));
+            String G1 = match.group(1);
+            //System.err.println("*** HandleNotification.GetArchive(): G1 = "+G1);
+            Long F = Long.decode(G1);
+            //System.err.println("*** HandleNotification.GetArchive(): F = "+F);
+            long first = F.longValue();
+            //System.err.println("*** HandleNotification.GetArchive(): first = "+first);
+            long last  = Long.decode(match.group(2)).longValue();
+            //System.err.println("*** HandleNotification.GetArchive(): last = "+last);
             if ((last-first)+1 != size) {
                 psuff = ".partial:"+range;
             }
         }
+        System.err.println("*** HandleNotification.GetArchive(): psuff = "+psuff);
+        System.err.println("*** HandleNotification.GetArchive(): vault = "+vault);
         Element vnode = findvaultbyname(vault);
-        Element anode = findarchivebyaid(vnode,archiveid);
-        NodeList dtags = anode.getElementsByTagName("description");
+        System.err.println("*** HandleNotification.GetArchive(): vnode = "+vnode);
+        System.err.println("*** HandleNotification.GetArchive(): archiveid = "+archiveid);
+        Element anode = null;
+        if (vnode != null) anode = findarchivebyaid(vnode,archiveid);
+        System.err.println("*** HandleNotification.GetArchive(): anode = "+anode);
+        NodeList dtags = null;
+        if (anode != null) dtags = anode.getElementsByTagName("description");
         File filename;
         if (dtags != null && dtags.getLength() > 0) {
             Element dtag = (Element) dtags.item(0);
@@ -123,13 +145,14 @@ public class HandleNotification extends BackupVault {
             while (true) {
                 Formatter f = new Formatter();
                 index++;
-                f.format("TMP%8X",index);
+                f.format("TMP%08X",index);
                 filename = new File(ArchiveRestoreDir,f.toString()+psuff);
                 if (!filename.exists()) {
                     break;
                 }
             }
         }
+        System.err.println("*** HandleNotification.GetArchive(): filename = "+filename);
         RetrieveArchive(vault,archiveid,jobid,filename.getPath(),size,range,treehash,wholetreehash);
     }
     private void SyncInventory(JSONObject job) throws Exception {
