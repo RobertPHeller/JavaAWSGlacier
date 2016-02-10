@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <150629.0936>
+ *  Last Modified : <160209.1709>
  *
  *  Description	
  *
@@ -153,7 +153,6 @@ public class FlushOldVaults extends BackupVault {
             //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): (deleting archives) tape = %s\n",tape);
             NodeList archives = vault.getElementsByTagName("archive");
             boolean deletable = false;
-            boolean hasfulls  = false;
             int j;
             for (j=0; j < archives.getLength(); j++) {
                 Element a = (Element) archives.item(j);
@@ -164,9 +163,6 @@ public class FlushOldVaults extends BackupVault {
                     String descr = descrele.getTextContent();
                     //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s'\n",descr);
                     if (!descr.matches("^.*\\.\\d$")) continue;
-                    if (descr.matches("^.*\\.0$")) {
-                        hasfulls = true;
-                    } 
                     Date adate = parseVDBDate(a.getAttribute("date"));
                     //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = %s: adate is %s\n",descr,adate.toString());
                     
@@ -183,9 +179,6 @@ public class FlushOldVaults extends BackupVault {
                 }
             }
             //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletable is %s, hasfulls = %s\n",(deletable)?"true":"false",(hasfulls)?"true":"false");
-            if (!hasfulls) {
-                deletable = true;
-            }
             if (!deletable) {continue;}
             //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletable is true\n");
             boolean deletetape = true;

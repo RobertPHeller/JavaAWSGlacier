@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <150913.1505>
+ *  Last Modified : <160209.1141>
  *
  *  Description	
  *
@@ -132,6 +132,8 @@ public class GlacierCommand extends BackupVault {
             verb2.toLowerCase();
             if (verb2.matches("^arch.*")) {
                 getarchive(copyTail(command,2));
+            } else if (verb2.matches("^vault.*")) {
+                getvault(copyTail(command,2));
             } else if (verb2.matches("^inv.*")) {
                 getInventoryJob(copyTail(command,2));
             } else {
@@ -757,6 +759,27 @@ public class GlacierCommand extends BackupVault {
         }
         String uploadId = args[1];
         AbortMultipartUpload(vaultName,uploadId);
+    }
+    private void getvault(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vaultName = args[0];
+        Element vnode = findvaultbyname(vaultName);
+        NodeList archives = vnode.getElementsByTagName("archive");
+        for (int j=0; j < archives.getLength();j++) {
+            Element a = (Element) archives.item(j);
+            NodeList dtags = a.getElementsByTagName("description");
+            String descr = a.getAttribute("archiveid");
+            if (dtags != null && dtags.getLength() > 0) {
+                Element dtag = (Element) dtags.item(0);
+                descr = dtag.getTextContent();
+            }
+            String jargs[] = {"",""};
+            jargs[0] = args[0];
+            jargs[1] = descr;
+            getarchive(jargs);
+        }
     }
     private void getarchive(String args[]) throws Exception {
         if (args.length < 1) {

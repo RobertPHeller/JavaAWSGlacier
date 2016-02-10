@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 23 14:21:22 2015
- *  Last Modified : <150913.1231>
+ *  Last Modified : <160209.1329>
  *
  *  Description	
  *
@@ -274,12 +274,24 @@ class BackupVault extends VaultXMLDB {
         }
     }
     private String RetrieveWholeArchiveInParts(String vault, String archiveid, String jobid, String filename, String wholetreehash, long size,int thepartsize) throws Exception {
+        // Check if archive is partially restored and only restore what 
+        // hasn't been restored
         File downloadpartfile = generateTempfile();
         File file = new File(filename);
-        FileOutputStream fp = new FileOutputStream(file);
-        boolean done = false;
-        long pos = 0;
-        long remainder = size;
+        FileOutputStream fp;
+        long pos;
+        long remainder;
+        if (file.exists()) {
+            fp = new FileOutputStream(file,true);
+            long len = file.length();
+            pos = len;
+            remainder = size - len;
+        } else {
+            pos = 0;
+            remainder = size;
+            fp = new FileOutputStream(file);
+        }
+        boolean done = remainder > 0;
         int partsize = 0;
         while (!done) {
             if (remainder > (long)thepartsize) {
@@ -314,6 +326,7 @@ class BackupVault extends VaultXMLDB {
             pos += partsize;
             remainder -= partsize;
             done = pos >= size;
+            downloadpartfile.delete();
         }
         fp.close();
         String computedTreeHash = TreeHashGenerator.calculateTreeHash(file);

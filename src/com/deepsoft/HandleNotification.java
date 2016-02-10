@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun Jun 21 08:34:02 2015
- *  Last Modified : <160209.0951>
+ *  Last Modified : <160209.1549>
  *
  *  Description	
  *
@@ -102,6 +102,8 @@ public class HandleNotification extends BackupVault {
         } else {
             throw new Exception("Cannot parse vaultARN: "+vaultARN);
         }
+        File vaultRestoreDir = new File(ArchiveRestoreDir,vault);
+        vaultRestoreDir.mkdirs();
         String treehash = job.getString("SHA256TreeHash");
         if (treehash == null) treehash = "";
         //System.err.println("*** HandleNotification.GetArchive(): treehash = "+treehash);
@@ -139,14 +141,14 @@ public class HandleNotification extends BackupVault {
         File filename;
         if (dtags != null && dtags.getLength() > 0) {
             Element dtag = (Element) dtags.item(0);
-            filename = new File(ArchiveRestoreDir,dtag.getTextContent()+psuff);
+            filename = new File(vaultRestoreDir,dtag.getTextContent()+psuff);
         } else {
             int index = 0;
             while (true) {
                 Formatter f = new Formatter();
                 index++;
                 f.format("TMP%08X",index);
-                filename = new File(ArchiveRestoreDir,f.toString()+psuff);
+                filename = new File(vaultRestoreDir,f.toString()+psuff);
                 if (!filename.exists()) {
                     break;
                 }
