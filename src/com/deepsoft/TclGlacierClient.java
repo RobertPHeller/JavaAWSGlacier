@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Mon May 18 09:47:03 2015
- *  Last Modified : <150524.0906>
+ *  Last Modified : <160619.1557>
  *
  *  Description	
  *
@@ -44,6 +44,7 @@ package com.deepsoft;
 
 import java.io.*;
 import java.util.*;
+import java.lang.*;
 import java.security.NoSuchAlgorithmException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.PropertiesCredentials;
@@ -188,6 +189,53 @@ class TclGlacierClient {
                 Usage();
             }
             File archiveFile = new File(args[2]);
+            int partsize = 0;
+            if (args.length == 4) {
+                partsize = Integer.parseInt(args[3]);
+            }
+            AWSCredentials credentials = null;
+            try {
+                String homedir = System.getProperty("user.home");
+                File credfile = new File(homedir+"/.AwsCredentials");
+                credentials = new PropertiesCredentials(credfile);
+            } catch (IOException ioe) {
+                System.err.println("Failed to get credentials: " + ioe.getMessage());
+                System.exit(-1);
+            }
+        
+            AmazonGlacierClient client = new AmazonGlacierClient(credentials);
+            client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
+            try {
+                AmazonGlacierArchiveOperations.UploadResult result;
+                if (partsize > 0) {
+                    result =
+                          AmazonGlacierArchiveOperations.uploadArchive(client,vaultName,
+                                    archiveFile,partsize);
+                } else {
+                    result =
+                          AmazonGlacierArchiveOperations.uploadArchive(client,vaultName,
+                                    archiveFile);
+                }
+                System.out.println(result.location+" "+result.sha256treehash+" {"+archiveFile.getName()+"}");
+            } catch (Exception e) {
+                System.err.println("Archive operation failed." + e.getMessage());
+            }
+        } else if (command.compareTo("ContinueMultipartUpload") == 0) {
+            if (args.length < 2) {
+                System.err.println("Missing required vaultName argument");
+                Usage();
+            }
+            String vaultName = args[1];
+            if (args.length < 3) {
+                System.err.println("Missing required uploadId argument");
+                Usage();
+            }
+            String uploadId = args[2];
+            if (args.length < 4) {
+                System.err.println("Missing required filename argument");
+                Usage();
+            }
+            File archiveFile = new File(args[3]);
             AWSCredentials credentials = null;
             try {
                 String homedir = System.getProperty("user.home");
@@ -202,8 +250,9 @@ class TclGlacierClient {
             client.setEndpoint("https://glacier.us-east-1.amazonaws.com/");
             try {
                 AmazonGlacierArchiveOperations.UploadResult result =
-                      AmazonGlacierArchiveOperations.uploadArchive(client,vaultName,
-                                archiveFile);
+                      AmazonGlacierArchiveOperations
+                      .continueMultipartUploadArchive(client,vaultName, 
+                                uploadId,archiveFile);
                 System.out.println(result.location+" "+result.sha256treehash+" {"+archiveFile.getName()+"}");
             } catch (Exception e) {
                 System.err.println("Archive operation failed." + e.getMessage());
@@ -920,10 +969,11 @@ String sp = "";
         //System.err.println(" InitiateMultipartUpload vaultname partsize description");
         //System.err.println(" UploadMultipartPart vaultname uploadid uploadpartfile range");
         //System.err.println(" CompleteMultipartUpload vaultname uploadid size sha256_tree_hash");
-        System.err.println(" UploadArchive vaultname archivefile");
+        System.err.println(" UploadArchive vaultname archivefile [partsize]");
         System.err.println(" ListParts vaultname uploadid opts...");
         System.err.println(" ListMultipartUploads vaultname opts...");
         System.err.println(" AbortMultipartUpload vaultname uploadid");
+        System.err.println(" ContinueMultipartUpload vaultname uploadid filename");
         System.err.println(" DeleteArchive vaultname archiveid");
         System.err.println("");
         System.err.println(" InitiateJob vaultname jobtype jobparameters...");

@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 19 09:13:42 2015
- *  Last Modified : <150607.1443>
+ *  Last Modified : <160619.1211>
  *
  *  Description	
  *
@@ -52,7 +52,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-
+import java.util.Iterator;
+import java.util.Scanner;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentials;
@@ -70,6 +71,7 @@ import com.amazonaws.services.glacier.model.UploadMultipartPartResult;
 import com.amazonaws.services.glacier.model.AbortMultipartUploadRequest;
 import com.amazonaws.services.glacier.model.ListPartsRequest;
 import com.amazonaws.services.glacier.model.ListPartsResult;
+import com.amazonaws.services.glacier.model.PartListElement;
 import com.amazonaws.services.glacier.model.ListMultipartUploadsRequest;
 import com.amazonaws.services.glacier.model.ListMultipartUploadsResult;
 import com.amazonaws.services.glacier.model.DeleteArchiveRequest;
@@ -101,6 +103,96 @@ public class AmazonGlacierArchiveOperations {
             result = UploadArchiveInOnePart(client,vaultName,archiveFile,size,description);
         }
         return result;
+    }
+    public static class uploadedRange {
+        public long s,e;
+        public uploadedRange(String range) {
+            Scanner scan = new Scanner(range).useDelimiter("-");
+            s = scan.nextLong();
+            e = scan.nextLong();
+        }
+        public uploadedRange(uploadedRange other) {
+            s = other.s;
+            e = other.e;
+        }
+        public uploadedRange(long start, long end) {
+            s = start;
+            e = end;
+        }
+    }
+    private static uploadedRange findUploadedRange(long start, long end, List<uploadedRange> ranges) {
+        try {
+            Iterator itr = ranges.iterator();
+            while (itr.hasNext()) {
+                uploadedRange range = (uploadedRange)itr.next();
+                if (range.s == start && range.e == end) {
+                    return range;
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    public static UploadResult continueMultipartUploadArchive(AmazonGlacierClient client, String vaultName, String uploadId, File archiveFile) throws Exception {
+        long partsize = 0;
+        long currentPosition = 0;
+        List<byte[]> binaryChecksums = new LinkedList<byte[]>();
+        List<uploadedRange> uploadedRanges = new LinkedList<uploadedRange>();
+        try {
+            ListPartsResult parts = listParts(client,vaultName,uploadId,null,null);
+            partsize = parts.getPartSizeInBytes();
+            java.util.List<PartListElement> partlist = parts.getParts();
+            if (partlist != null) {
+                Iterator itr = partlist.iterator();
+                while (itr.hasNext()) {
+                    PartListElement part = (PartListElement)itr.next();
+                    String range = part.getRangeInBytes();
+                    uploadedRange urange = new uploadedRange(range);
+                    uploadedRanges.add(urange);
+                    String treeHash = part.getSHA256TreeHash();
+                    byte[] binaryChecksum = BinaryUtils.fromHex(treeHash);
+                    binaryChecksums.add(binaryChecksum);
+                }
+            }
+        } catch (Exception e) {
+            throw e;
+        }
+        FileInputStream fileToUpload = new FileInputStream(archiveFile);
+        String contentRange;
+        int read = 0;
+        byte[] buffer = new byte[(int)partsize];
+        while (currentPosition < archiveFile.length()) {
+            read = fileToUpload.read(buffer, 0, buffer.length);
+            if (read == -1) { break; }
+            uploadedRange r = findUploadedRange(currentPosition,currentPosition+read,uploadedRanges);
+            if (r == null) {
+                byte[] bytesRead = Arrays.copyOf(buffer, read);
+                contentRange = String.format("bytes %s-%s/*", currentPosition,
+                          currentPosition + read - 1);
+                String checksum = TreeHashGenerator.calculateTreeHash(new ByteArrayInputStream(bytesRead));
+            
+                byte[] binaryChecksum = BinaryUtils.fromHex(checksum);
+                binaryChecksums.add(binaryChecksum);
+                uploadedRanges.add(new uploadedRange(currentPosition,currentPosition + read - 1));
+            
+                //Upload part.
+                UploadMultipartPartRequest partRequest = new UploadMultipartPartRequest()
+                      .withVaultName(vaultName)
+                      .withBody(new ByteArrayInputStream(bytesRead))
+                      .withChecksum(checksum)
+                      .withRange(contentRange)
+                      .withUploadId(uploadId);
+            
+                //System.err.println("*** AmazonGlacierArchiveOperations.uploadParts(): partRequest = "+partRequest);
+                UploadMultipartPartResult partResult = client.uploadMultipartPart(partRequest);
+                
+            }
+            currentPosition = currentPosition + read;
+        }
+        String checksum = TreeHashGenerator.calculateTreeHash(binaryChecksums);
+        String location = CompleteMultiPartUpload(client,vaultName,archiveFile,uploadId, checksum);
+        return new UploadResult(location,checksum);
     }
     private static UploadResult UploadArchiveInOnePart(AmazonGlacierClient client, String vaultName, File archiveFile, long size, String description) throws Exception {
         InputStream is = new FileInputStream(archiveFile);
@@ -151,8 +243,7 @@ public class AmazonGlacierArchiveOperations {
         int read = 0;
         while (currentPosition < archiveFile.length())
         {
-            
-            read = fileToUpload.read(buffer, filePosition, buffer.length);
+            read = fileToUpload.read(buffer, 0, buffer.length);
             if (read == -1) { break; }
             byte[] bytesRead = Arrays.copyOf(buffer, read);
             

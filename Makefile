@@ -8,7 +8,7 @@
 #  Author        : $Author$
 #  Created By    : Robert Heller
 #  Created       : Thu Jun 4 13:22:24 2015
-#  Last Modified : <151120.1617>
+#  Last Modified : <160619.1133>
 #
 #  Description	
 #
@@ -46,15 +46,15 @@
 all: dist
 
 dist: FORCE
-	export JAVA_HOME=/usr/lib/jvm/java-1.6.0; ant dist
+	export JAVA_HOME=/usr/lib/jvm/java-1.7.0; ant dist
 	
 compile: FORCE
-	export JAVA_HOME=/usr/lib/jvm/java-1.6.0;  ant compile
+	export JAVA_HOME=/usr/lib/jvm/java-1.7.0; ant compile
 	
 init: FORCE
-	export JAVA_HOME=/usr/lib/jvm/java-1.6.0;  ant init
+	export JAVA_HOME=/usr/lib/jvm/java-1.7.0; ant init
 	
 clean: FORCE
-	export JAVA_HOME=/usr/lib/jvm/java-1.6.0;  ant clean
+	export JAVA_HOME=/usr/lib/jvm/java-1.7.0; ant clean
 
 FORCE:
