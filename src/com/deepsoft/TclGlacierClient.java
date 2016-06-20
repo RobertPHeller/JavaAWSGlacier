@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Mon May 18 09:47:03 2015
- *  Last Modified : <160619.1557>
+ *  Last Modified : <160620.0933>
  *
  *  Description	
  *
@@ -681,7 +681,7 @@ class TclGlacierClient {
                             System.out.print(sp+"CreationDate "+creationDate);
                             sp = " ";
                         }
-                        System.out.print(sp+"Completed = "+completed);
+                        System.out.print(sp+"Completed "+completed);
                         sp = " ";
                         if (statusCode != null) {
                             System.out.print(sp+"StatusCode "+statusCode);
@@ -817,7 +817,7 @@ String sp = "";
                     System.out.print(sp+"CreationDate "+creationDate);
                     sp = " ";
                 }
-                System.out.print(sp+"Completed = "+completed);
+                System.out.print(sp+"Completed "+completed);
                 sp = " ";
                 if (statusCode != null) {
                     System.out.print(sp+"StatusCode "+statusCode);
