@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun Jun 21 08:34:02 2015
- *  Last Modified : <160209.1549>
+ *  Last Modified : <201128.0029>
  *
  *  Description	
  *
@@ -87,13 +87,13 @@ public class HandleNotification extends BackupVault {
         }
     }
     private void GetArchive(JSONObject job) throws Exception {
-        //System.err.println("*** HandleNotification.GetArchive("+job+")");
+        System.err.println("*** HandleNotification.GetArchive("+job+")");
         String archiveid = job.getString("ArchiveId");
-        //System.err.println("*** HandleNotification.GetArchive(): archiveid = "+archiveid);
+        System.err.println("*** HandleNotification.GetArchive(): archiveid = "+archiveid);
         String jobid     = job.getString("JobId");
-        //System.err.println("*** HandleNotification.GetArchive(): jobid = "+jobid);
+        System.err.println("*** HandleNotification.GetArchive(): jobid = "+jobid);
         String vaultARN  = job.getString("VaultARN");
-        //System.err.println("*** HandleNotification.GetArchive(): vaultARN = "+vaultARN);
+        System.err.println("*** HandleNotification.GetArchive(): vaultARN = "+vaultARN);
         String vault = "";
         Matcher match = vaultARNPattern.matcher(vaultARN);
         if (match.matches()) {
@@ -106,24 +106,24 @@ public class HandleNotification extends BackupVault {
         vaultRestoreDir.mkdirs();
         String treehash = job.getString("SHA256TreeHash");
         if (treehash == null) treehash = "";
-        //System.err.println("*** HandleNotification.GetArchive(): treehash = "+treehash);
+        System.err.println("*** HandleNotification.GetArchive(): treehash = "+treehash);
         String wholetreehash = job.getString("ArchiveSHA256TreeHash");
-        //System.err.println("*** HandleNotification.GetArchive(): wholetreehash = "+wholetreehash);
+        System.err.println("*** HandleNotification.GetArchive(): wholetreehash = "+wholetreehash);
         long size = job.getLong("ArchiveSizeInBytes");
-        //System.err.println("*** HandleNotification.GetArchive(): size = "+size);
+        System.err.println("*** HandleNotification.GetArchive(): size = "+size);
         String range = job.getString("RetrievalByteRange");
-        //System.err.println("*** HandleNotification.GetArchive(): range = "+range);
+        System.err.println("*** HandleNotification.GetArchive(): range = "+range);
         match = RangeSplitPattern.matcher(range);
         String psuff = "";
         if (match.matches()) {
             String G1 = match.group(1);
-            //System.err.println("*** HandleNotification.GetArchive(): G1 = "+G1);
+            System.err.println("*** HandleNotification.GetArchive(): G1 = "+G1);
             Long F = Long.decode(G1);
-            //System.err.println("*** HandleNotification.GetArchive(): F = "+F);
+            System.err.println("*** HandleNotification.GetArchive(): F = "+F);
             long first = F.longValue();
-            //System.err.println("*** HandleNotification.GetArchive(): first = "+first);
+            System.err.println("*** HandleNotification.GetArchive(): first = "+first);
             long last  = Long.decode(match.group(2)).longValue();
-            //System.err.println("*** HandleNotification.GetArchive(): last = "+last);
+            System.err.println("*** HandleNotification.GetArchive(): last = "+last);
             if ((last-first)+1 != size) {
                 psuff = ".partial:"+range;
             }
