@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 14:00:27 2015
- *  Last Modified : <150628.1018>
+ *  Last Modified : <210330.1624>
  *
  *  Description	
  *
@@ -139,24 +139,24 @@ public class VaultToGlacier extends BackupVault {
                     }
                     if (a == null) {break;}
                 }
-                Calendar calendar = new GregorianCalendar();
-                int dow = calendar.get(Calendar.DAY_OF_WEEK);
+                //Calendar calendar = new GregorianCalendar();
+                //int dow = calendar.get(Calendar.DAY_OF_WEEK);
                 //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): dow = %d\n",dow);
                 //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): Calendar.WEDNESDAY = %d\n",Calendar.WEDNESDAY);
                 //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): Calendar.SATURDAY = %d\n",Calendar.SATURDAY);
                 //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): allArchives.length = %d, uploadedArchivesCount = %d\n",allArchives.length,uploadedArchivesCount);
-                if (allArchives.length == uploadedArchivesCount &&
-                    ArrayEQ(allArchives,uploadedArchives) &&
-                    dow > Calendar.WEDNESDAY &&
-                    dow <= Calendar.SATURDAY) {
-                    for (int j = 0; j < uploadedArchivesCount; j++) {
-                        File file = new File(slotdir,uploadedArchives[j]);
-                        if (file.delete())
-                            System.out.println("Local archive deleted: "+uploadedArchives[j]);
-                        else System.err.printf("Failed to delete local archive: %s\n",uploadedArchives[j]);
-                        
-                    }
-                }
+                //if (allArchives.length == uploadedArchivesCount &&
+                //    ArrayEQ(allArchives,uploadedArchives) &&
+                //    dow > Calendar.WEDNESDAY &&
+                //    dow <= Calendar.SATURDAY) {
+                //    for (int j = 0; j < uploadedArchivesCount; j++) {
+                //        File file = new File(slotdir,uploadedArchives[j]);
+                //        if (file.delete())
+                //            System.out.println("Local archive deleted: "+uploadedArchives[j]);
+                //        else System.err.printf("Failed to delete local archive: %s\n",uploadedArchives[j]);
+                //        
+                //    }
+                //}
             }
         }
         savedb(GlacierVaultDB_File);
