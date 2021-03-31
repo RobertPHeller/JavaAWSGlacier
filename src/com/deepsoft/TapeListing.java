@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 09:37:29 2015
- *  Last Modified : <150526.1519>
+ *  Last Modified : <210331.0854>
  *
  *  Description	
  *
@@ -51,7 +51,7 @@ import org.w3c.dom.*;
 import com.deepsoft.*;
 
 public class TapeListing {
-    private static final Pattern LinePattern = Pattern.compile("^(\\d{4})-(\\d{2})-(\\d{2})\\s+(\\d{2}):(\\d{2}):(\\d{2})\\s+(\\S+)\\s+(\\S+)\\s+(\\d+)[\\s]+(\\S+)\\s+(\\d+)\\s+(\\d+)/([0-9-]+)\\s+(.*)$");
+    private static final Pattern LinePattern = Pattern.compile("^(\\d{4})-(\\d{2})-(\\d{2})\\s+(\\d{2}):(\\d{2}):(\\d{2})\\s+(\\S+)\\s+(\\S+)\\s+(\\d+)[\\s]+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)/([0-9-]+)\\s+(\\S+)\\s*$");
     private static final Pattern VaultPattern = Pattern.compile("^wendellfreelibrary-vault-\\d+$");
     private static Hashtable<String,LinkedList<TapeListing>> tapes = new Hashtable<String,LinkedList<TapeListing>>();
     private static Hashtable<String,String> host_disk = new Hashtable<String,String>();
@@ -60,6 +60,7 @@ public class TapeListing {
     private String disk;
     private boolean vaulted = false;
     public TapeListing(String _y,String _m, String _d, String _H, String _M, String _S, String _host, String _disk, String tapelabel) {
+        //System.err.println("*** TapeListing() entered");
         int y = Integer.parseInt(_y,10);
         int m = Integer.parseInt(_m,10);
         int d = Integer.parseInt(_d,10);
@@ -150,17 +151,19 @@ public class TapeListing {
                 //System.err.println("*** processfind(): _disk = "+_disk);
                 String level = match.group(9);
                 //System.err.println("*** processfind(): level = "+level);
-                String tapelabel = match.group(10);
+                String tapelabel = match.group(12);
                 //System.err.println("*** processfind(): tapelabel = "+tapelabel);
-                String file = match.group(11);
+                String file = match.group(13);
                 //System.err.println("*** processfind(): file = "+file);
-                String part = match.group(12);
+                String part = match.group(14);
                 //System.err.println("*** processfind(): part = "+part);
-                String ofparts = match.group(13);
+                String ofparts = match.group(15);
                 //System.err.println("*** processfind(): ofparts = "+ofparts);
-                String status = match.group(14);
+                String status = match.group(16);
                 //System.err.println("*** processfind(): status = "+status);
                 if (Integer.parseInt(level) > 0) {continue;}
+                //System.err.println("*** processfind(): level == 0");
+                //System.err.println("*** processfind(): status is '"+status+"'");
                 if (status.compareTo("OK") != 0) {continue;}
                 TapeListing t = new TapeListing(y,m,d,H,M,S,_host,_disk,tapelabel);
             }
