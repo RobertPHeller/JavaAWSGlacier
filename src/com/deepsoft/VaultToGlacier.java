@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 14:00:27 2015
- *  Last Modified : <210330.1624>
+ *  Last Modified : <210331.1254>
  *
  *  Description	
  *
@@ -52,8 +52,9 @@ import com.deepsoft.*;
 
 
 public class VaultToGlacier extends BackupVault {
-    private static final File GlacierVaultDB_File = new File("/var/log/amanda/wendellfreelibrary/glacier.xml");
-    private static final Pattern LabelPattern = Pattern.compile("00000\\.(wendellfreelibrary-vault-\\d+)$");
+    private static File GlacierVaultDB_File;
+    private static Pattern LabelPattern;
+    private static SiteConfig configuration;
     public VaultToGlacier() throws Exception {
         super(GlacierVaultDB_File);
     }
@@ -83,7 +84,7 @@ public class VaultToGlacier extends BackupVault {
     private class LabelFileFilter implements FilenameFilter {
         public boolean accept(File dir, String name) {
             //System.err.printf("*** VaultToGlacier.LabelFileFilter.accept(%s,%s)\n",dir.toString(),name);
-            boolean m = name.matches("^00000\\.wendellfreelibrary-vault-.+$");
+            boolean m = name.matches(configuration.LabelFileFilter());
             //System.err.printf("*** VaultToGlacier.LabelFileFilter.accept(): m = %s\n",(m?"true":"false"));
             return m;
         }
@@ -94,7 +95,7 @@ public class VaultToGlacier extends BackupVault {
             if (after8am()) {break;}
             Formatter f = new Formatter();
             f.format("slot%d",i);
-            File slotdir = new File("/backupdisk/wendellfreelibrary_vault/slots",f.toString());
+            File slotdir = new File(configuration.Slotdir(),f.toString());
             String labels[] = slotdir.list(new LabelFileFilter());
             //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): labels.length = %d\n",labels.length);
             if (labels.length < 1) {continue;}
@@ -162,6 +163,9 @@ public class VaultToGlacier extends BackupVault {
         savedb(GlacierVaultDB_File);
     }
     public static void main(String args[]) throws Exception {
+        configuration = new SiteConfig();
+        GlacierVaultDB_File = new File(configuration.GlacierVaultDB_FileName());
+        LabelPattern = Pattern.compile(configuration.LabelPattern());
         VaultToGlacier V2G = new VaultToGlacier();
         V2G.RsyncToTheGlacier();
     }

@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <160209.1141>
+ *  Last Modified : <210331.1235>
  *
  *  Description	
  *
@@ -821,9 +821,11 @@ public class GlacierCommand extends BackupVault {
         }
         if (response != null && response != "") savedb(GlacierVaultDB_File);
     }
+    private static SiteConfig configuration;
     public static void main(String args[]) throws Exception {
-        String dbfile = "/var/log/amanda/wendellfreelibrary/glacier.xml";
-        String snstopic = "arn:aws:sns:us-east-1:647212794748:LibraryGlacier";
+        configuration = new SiteConfig();
+        String dbfile = configuration.GlacierVaultDB_FileName();
+        String snstopic = configuration.SNSTopic();
         int iopt = 0;
         while (iopt < args.length) {
             if (args[iopt].compareTo("-dbfile") == 0 &&

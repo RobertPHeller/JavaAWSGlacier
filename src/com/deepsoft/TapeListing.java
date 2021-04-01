@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 09:37:29 2015
- *  Last Modified : <210331.0854>
+ *  Last Modified : <210331.1257>
  *
  *  Description	
  *
@@ -51,8 +51,9 @@ import org.w3c.dom.*;
 import com.deepsoft.*;
 
 public class TapeListing {
+    private static SiteConfig configuration;                                    
     private static final Pattern LinePattern = Pattern.compile("^(\\d{4})-(\\d{2})-(\\d{2})\\s+(\\d{2}):(\\d{2}):(\\d{2})\\s+(\\S+)\\s+(\\S+)\\s+(\\d+)[\\s]+(\\S+)\\s+(\\S+)\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)/([0-9-]+)\\s+(\\S+)\\s*$");
-    private static final Pattern VaultPattern = Pattern.compile("^wendellfreelibrary-vault-\\d+$");
+    private static Pattern VaultPattern;
     private static Hashtable<String,LinkedList<TapeListing>> tapes = new Hashtable<String,LinkedList<TapeListing>>();
     private static Hashtable<String,String> host_disk = new Hashtable<String,String>();
     private String timestamp = "00000000000000";
@@ -217,9 +218,11 @@ public class TapeListing {
         }
         return vts;
     }
-    public static void main(String args[]) throws IOException, InterruptedException {
+    public static void main(String args[]) throws Exception {
+        configuration = new SiteConfig();
+        VaultPattern = Pattern.compile(configuration.VaultPattern());
         //System.err.println("*** Creating a process builder...");
-        ProcessBuilder findproc = new ProcessBuilder("/usr/sbin/amadmin","wendellfreelibrary","find","--sort","LD");
+        ProcessBuilder findproc = new ProcessBuilder("/usr/sbin/amadmin",configuration.AMCONFIG(),"find","--sort","LD");
         //System.err.println("*** Creating a process...");
         Process p = findproc.start();
         //System.err.println("*** Process started");
@@ -235,8 +238,8 @@ public class TapeListing {
             ListIterator<String> iter = tss.listIterator(0);
             while (iter.hasNext()) {
                 String ts = (String) iter.next();
-                System.out.println("/usr/sbin/amvault wendellfreelibrary "+ts+" vault_changer wendellfreelibrary-vault-%%%");
-                ProcessBuilder vaultproc = new ProcessBuilder("/usr/sbin/amvault","wendellfreelibrary",ts,"vault_changer","wendellfreelibrary-vault-%%%");
+                System.out.println("/usr/sbin/amvault "+configuration.AMCONFIG()+" "+ts+" vault_changer "+configuration.VAULTLabel());
+                ProcessBuilder vaultproc = new ProcessBuilder("/usr/sbin/amvault",configuration.AMCONFIG(),ts,"vault_changer",configuration.VAULTLabel());
                 p = vaultproc.start();
                 is = p.getInputStream();
                 InputStreamReader isr = new InputStreamReader(is);

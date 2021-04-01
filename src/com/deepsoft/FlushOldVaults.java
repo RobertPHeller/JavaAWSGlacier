@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <160209.1709>
+ *  Last Modified : <210331.1228>
  *
  *  Description	
  *
@@ -54,12 +54,13 @@ import com.deepsoft.*;
 public class FlushOldVaults extends BackupVault {
     private static final String AMRMTAPE = "/usr/sbin/amrmtape";
     private static final String AMADMIN = "/usr/sbin/amadmin";
-    private static final String AMCONFIG = "wendellfreelibrary";
     private static final String AMGETCONF = "/usr/sbin/amgetconf";
     private static final String CONFIGDIR = "/etc/amanda";
-    private static final File GlacierVaultDB_File = new File("/var/log/amanda/wendellfreelibrary/glacier.xml");
+    private static File GlacierVaultDB_File;
+    private static SiteConfig configuration;
     public FlushOldVaults() throws Exception {
         super(GlacierVaultDB_File);
+        
     }
     private static final SimpleDateFormat ISO8601Date = new SimpleDateFormat("yyyyMMdd'T'HHmmss'Z'");
     private static final SimpleDateFormat oldTcl = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z");
@@ -82,7 +83,7 @@ public class FlushOldVaults extends BackupVault {
     private String amgetconf(String param) throws Exception {
         String cmd[] = new String[3];
         cmd[0] = AMGETCONF;
-        cmd[1] = AMCONFIG;
+        cmd[1] = configuration.AMCONFIG();
         cmd[2] = param;
         Process p = Runtime.getRuntime().exec(cmd);
         InputStream is = p.getInputStream();
@@ -98,16 +99,16 @@ public class FlushOldVaults extends BackupVault {
         String cmd[] = new String[4];
         cmd[0] = AMRMTAPE;
         cmd[1] = "-q";
-        cmd[2] = AMCONFIG;
+        cmd[2] = configuration.AMCONFIG();
         cmd[3] = tape;
         Process p = Runtime.getRuntime().exec(cmd);
         int status = p.waitFor();
-        if (status != 0) throw new Exception(AMRMTAPE+" -q "+AMCONFIG+" "+tape+": failed");
+        if (status != 0) throw new Exception(AMRMTAPE+" -q "+configuration.AMCONFIG()+" "+tape+": failed");
         return;
     }
     public void flushvaultsbefore(Date stamp,String disks[]) throws Exception {
         Element vaultsnode = getvaultnode();
-        File tapelist = new File(new File(CONFIGDIR,AMCONFIG),amgetconf("tapelist"));
+        File tapelist = new File(new File(CONFIGDIR,configuration.AMCONFIG()),amgetconf("tapelist"));
         NodeList vaults = vaultsnode.getElementsByTagName("vault");
         int i;
         for (i=0; i < vaults.getLength(); i++) {
@@ -221,6 +222,8 @@ public class FlushOldVaults extends BackupVault {
         }
     }
     public static void main(String args[]) throws Exception {
+        configuration = new SiteConfig();
+        GlacierVaultDB_File = new File(configuration.GlacierVaultDB_FileName());
         FlushOldVaults FOV = new FlushOldVaults();
         Calendar today = new GregorianCalendar();
         int thismonth = today.get(Calendar.MONTH);
@@ -248,7 +251,7 @@ public class FlushOldVaults extends BackupVault {
         Date qbegin = simpleDate.parse(f.toString());
         f.close();
         //System.err.printf("*** FlushOldVaults.main(): qbegin = %s\n",qbegin.toString());
-        String disks[] = new String[]{"boot","bootefi","root","distros","ub140464"};
+        String disks[] = FOV.configuration.Disks();
         FOV.flushvaultsbefore(qbegin,disks);
     }
 }

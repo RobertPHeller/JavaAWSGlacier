@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun Jun 21 08:34:02 2015
- *  Last Modified : <201128.0029>
+ *  Last Modified : <210331.1236>
  *
  *  Description	
  *
@@ -224,8 +224,10 @@ public class HandleNotification extends BackupVault {
         }
         if (modified) savedb(GlacierVaultDB_File);
     }
+    private static SiteConfig configuration;
     public static void main(String args[]) throws Exception {
-        String dbfile = "/var/log/amanda/wendellfreelibrary/glacier.xml";
+        configuration = new SiteConfig();
+        String dbfile = configuration.GlacierVaultDB_FileName();
         String ARD = "/home/amandarestore";
         int iopt = 0;
         while (iopt < args.length) {
