@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <210331.1228>
+ *  Last Modified : <210401.1025>
  *
  *  Description	
  *
@@ -157,7 +157,6 @@ public class FlushOldVaults extends BackupVault {
             int j;
             for (j=0; j < archives.getLength(); j++) {
                 Element a = (Element) archives.item(j);
-                
                 NodeList dtag = a.getElementsByTagName("description");
                 if (dtag.getLength() > 0) {
                     Element descrele = (Element) dtag.item(0);
@@ -175,11 +174,12 @@ public class FlushOldVaults extends BackupVault {
                         //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s', disks[%d] = '%s'\n",descr,k,disks[k]);
                         if (descr.matches("^.*\\."+disks[k]+"\\.0$")) {
                             deletable = true;
+                            break;
                         }
                     }
                 }
             }
-            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletable is %s, hasfulls = %s\n",(deletable)?"true":"false",(hasfulls)?"true":"false");
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletable is %s\n",(deletable)?"true":"false");
             if (!deletable) {continue;}
             //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletable is true\n");
             boolean deletetape = true;
@@ -188,13 +188,13 @@ public class FlushOldVaults extends BackupVault {
             j = archives.getLength();
             while (j > 0) {
                 j--;
-                System.err.printf("*** FlushOldVaults.flushvaultsbefore(): j = %d, archives.getLength() = %d\n",j,archives.getLength());
+                //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): j = %d, archives.getLength() = %d\n",j,archives.getLength());
                 Element a = (Element) archives.item(j);
                 NodeList dtag = a.getElementsByTagName("description");
                 if (dtag.getLength() < 1) {continue;}
                 Element descrele = (Element) dtag.item(0);
                 String descr = descrele.getTextContent();
-                System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s'\n",descr);
+                //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s'\n",descr);
                 try {
                     //System.out.println("Archive "+vault.getAttribute("name")+"/"+descr+" would have been deleted from the Glacier");
                     //deletetape = false;
@@ -206,9 +206,9 @@ public class FlushOldVaults extends BackupVault {
                     deletetape = false;
                 }
             }
-            System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletedarchives = %d, archivecount = %d\n",deletedarchives,archivecount);
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletedarchives = %d, archivecount = %d\n",deletedarchives,archivecount);
             if (deletedarchives < archivecount) deletetape = false;
-            System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletetape = %s, archives.getLength() = %d\n",(deletetape)?"true":"false",archives.getLength());
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): deletetape = %s, archives.getLength() = %d\n",(deletetape)?"true":"false",archives.getLength());
             if (deletetape && archives.getLength() == 0) {
                 try {
                     //System.out.println(tape+" would have been deleted from the tape catalog");
