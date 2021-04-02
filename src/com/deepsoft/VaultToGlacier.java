@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 14:00:27 2015
- *  Last Modified : <210331.1254>
+ *  Last Modified : <210402.1054>
  *
  *  Description	
  *
@@ -84,7 +84,7 @@ public class VaultToGlacier extends BackupVault {
     private class LabelFileFilter implements FilenameFilter {
         public boolean accept(File dir, String name) {
             //System.err.printf("*** VaultToGlacier.LabelFileFilter.accept(%s,%s)\n",dir.toString(),name);
-            boolean m = name.matches(configuration.LabelFileFilter());
+            boolean m = name.matches(configuration.LabelFileFilterString());
             //System.err.printf("*** VaultToGlacier.LabelFileFilter.accept(): m = %s\n",(m?"true":"false"));
             return m;
         }
@@ -95,10 +95,17 @@ public class VaultToGlacier extends BackupVault {
             if (after8am()) {break;}
             Formatter f = new Formatter();
             f.format("slot%d",i);
+            //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): configuration.Slotdir() is %s\n",configuration.Slotdir());
+            //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): f is %s\n",f.toString());
             File slotdir = new File(configuration.Slotdir(),f.toString());
-            String labels[] = slotdir.list(new LabelFileFilter());
-            //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): labels.length = %d\n",labels.length);
-            if (labels.length < 1) {continue;}
+            if (slotdir == null) continue;
+            //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): slotdir is not null\n");
+            LabelFileFilter filter = new LabelFileFilter();
+            if (filter == null) continue;
+            //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): filter is not null\n");
+            String labels[] = slotdir.list(filter);
+            //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): after String labels[] =\n");
+            if (labels == null || labels.length < 1) {continue;}
             String label = labels[0];
             //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): label = %s\n",label);
             Matcher match = LabelPattern.matcher(label);
@@ -164,9 +171,13 @@ public class VaultToGlacier extends BackupVault {
     }
     public static void main(String args[]) throws Exception {
         configuration = new SiteConfig();
+        if (configuration == null) throw new Exception("No configuration!");
         GlacierVaultDB_File = new File(configuration.GlacierVaultDB_FileName());
+        if (GlacierVaultDB_File == null) throw new Exception("No GlacierVaultDB_File");
         LabelPattern = Pattern.compile(configuration.LabelPattern());
+        if (LabelPattern == null) throw new Exception("No LabelPattern");
         VaultToGlacier V2G = new VaultToGlacier();
+        if (V2G == null) throw new Exception("No V2G");
         V2G.RsyncToTheGlacier();
     }
 }

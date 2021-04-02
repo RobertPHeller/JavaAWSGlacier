@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Wed Mar 31 10:43:58 2021
- *  Last Modified : <210331.1253>
+ *  Last Modified : <210402.1036>
  *
  *  Description	
  *
@@ -102,7 +102,7 @@ public class SiteConfig {
     public String LabelPattern() {
         return siteProperties.getProperty("LabelPattern",LabelPattern_default);
     }
-    public String LabelFileFilter() {
+    public String LabelFileFilterString() {
         return siteProperties.getProperty("LabelFileFilter",LabelFileFilter_default);
     }
 }
