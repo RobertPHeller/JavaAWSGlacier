@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 09:37:29 2015
- *  Last Modified : <210331.1257>
+ *  Last Modified : <210404.1915>
  *
  *  Description	
  *
@@ -220,6 +220,7 @@ public class TapeListing {
     }
     public static void main(String args[]) throws Exception {
         configuration = new SiteConfig();
+        //System.err.printf("*** configuration.VaultPattern() is '%s'\n",configuration.VaultPattern());
         VaultPattern = Pattern.compile(configuration.VaultPattern());
         //System.err.println("*** Creating a process builder...");
         ProcessBuilder findproc = new ProcessBuilder("/usr/sbin/amadmin",configuration.AMCONFIG(),"find","--sort","LD");
@@ -238,8 +239,8 @@ public class TapeListing {
             ListIterator<String> iter = tss.listIterator(0);
             while (iter.hasNext()) {
                 String ts = (String) iter.next();
-                System.out.println("/usr/sbin/amvault "+configuration.AMCONFIG()+" "+ts+" vault_changer "+configuration.VAULTLabel());
-                ProcessBuilder vaultproc = new ProcessBuilder("/usr/sbin/amvault",configuration.AMCONFIG(),ts,"vault_changer",configuration.VAULTLabel());
+                System.out.println("/usr/sbin/amvault --fulls-only --dest-storage \"vault_storage\" --src-timestamp "+ts+" "+configuration.AMCONFIG());
+                ProcessBuilder vaultproc = new ProcessBuilder("/usr/sbin/amvault","--fulls-only","--dest-storage","vault_storage","--src-timestamp",ts,configuration.AMCONFIG());
                 p = vaultproc.start();
                 is = p.getInputStream();
                 InputStreamReader isr = new InputStreamReader(is);
