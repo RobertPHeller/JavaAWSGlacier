@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <210331.1235>
+ *  Last Modified : <210405.1648>
  *
  *  Description	
  *
@@ -241,8 +241,10 @@ public class GlacierCommand extends BackupVault {
         Pattern vpattern = Pattern.compile(p);              
         Element vaultsnode = getvaultnode();
         NodeList vaults = vaultsnode.getElementsByTagName("vault");
-        for (int i=0; i < vaults.getLength(); i++) {
+        //System.err.printf("*** GlacierCommand.showvaults(): vaults.getLength() = %d\n",vaults.getLength());
+        for (int i=0; i < vaults.getLength();i++) {
             Element vault = (Element) vaults.item(i);
+            //System.err.printf("*** GlacierCommand.showvaults(): vault.getAttribute(\"name\") is '%s'\n",vault.getAttribute("name"));
             Matcher match = vpattern.matcher(vault.getAttribute("name"));
             if (!match.matches()) continue;
             System.out.println(vault.getAttribute("name")+":");
@@ -842,6 +844,7 @@ public class GlacierCommand extends BackupVault {
             }
             iopt += 2;
         }
+        //System.err.printf("*** GlacierCommand.main(): dbfile is '%s'\n",dbfile);
         GlacierCommand cli = new GlacierCommand(new File(dbfile),snstopic);
         if (iopt < args.length) {
             String command[] = copyTail(args,iopt);

@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 14:00:27 2015
- *  Last Modified : <210402.1054>
+ *  Last Modified : <210405.0852>
  *
  *  Description	
  *
@@ -90,7 +90,7 @@ public class VaultToGlacier extends BackupVault {
         }
     }
     public void RsyncToTheGlacier() throws Exception {
-        for (int i=1; i <= 30; i++) {
+        for (int i=0; i <= 60; i++) {
             //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): i = %d\n",i);
             if (after8am()) {break;}
             Formatter f = new Formatter();

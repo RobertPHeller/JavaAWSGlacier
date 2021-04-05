@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 19 09:13:42 2015
- *  Last Modified : <160620.1101>
+ *  Last Modified : <210405.1640>
  *
  *  Description	
  *
@@ -242,10 +242,11 @@ public class AmazonGlacierArchiveOperations {
         FileInputStream fileToUpload = new FileInputStream(archiveFile);
         String contentRange;
         int read = 0;
+        int part = 1;
         while (currentPosition < archiveFile.length())
         {
             // String tstring = new Date().toString();
-            System.err.printf("*** AmazonGlacierArchiveOperations.uploadParts(): Top of file readloop: currentPosition = %d, time = %tT\n",currentPosition,new Date());
+            //System.err.printf("*** AmazonGlacierArchiveOperations.uploadParts(): Top of file readloop: currentPosition = %d, time = %tT\n",currentPosition,new Date());
             read = fileToUpload.read(buffer, 0, buffer.length);
             if (read == -1) { break; }
             byte[] bytesRead = Arrays.copyOf(buffer, read);
@@ -253,13 +254,13 @@ public class AmazonGlacierArchiveOperations {
             contentRange = String.format("bytes %s-%s/*", currentPosition,
                       currentPosition + read - 1);
             
-            System.err.printf("*** AmazonGlacierArchiveOperations.uploadParts(): about to compute TreeHash: contentRange = %s, time = %tT\n",contentRange,new Date());
+            //System.err.printf("*** AmazonGlacierArchiveOperations.uploadParts(): about to compute TreeHash: contentRange = %s, time = %tT\n",contentRange,new Date());
             String checksum = TreeHashGenerator.calculateTreeHash(new ByteArrayInputStream(bytesRead));
             
             byte[] binaryChecksum = BinaryUtils.fromHex(checksum);
             binaryChecksums.add(binaryChecksum);
             
-            System.err.printf("*** AmazonGlacierArchiveOperations.uploadParts(): checksum = %s, time = %tT\n",checksum,new Date());
+            //System.err.printf("*** AmazonGlacierArchiveOperations.uploadParts(): checksum = %s, time = %tT\n",checksum,new Date());
             //Upload part.
             UploadMultipartPartRequest partRequest = new UploadMultipartPartRequest()
                   .withVaultName(vaultName)
@@ -267,10 +268,10 @@ public class AmazonGlacierArchiveOperations {
                   .withChecksum(checksum)
                   .withRange(contentRange)
                   .withUploadId(uploadId);
-            
+            System.out.printf("%d..",part++);
             //System.err.println("*** AmazonGlacierArchiveOperations.uploadParts(): partRequest = "+partRequest);
             UploadMultipartPartResult partResult = client.uploadMultipartPart(partRequest);
-            System.err.printf("*** AmazonGlacierArchiveOperations.uploadParts(): upload competer at time = %tT\n",new Date());
+            //System.err.printf("*** AmazonGlacierArchiveOperations.uploadParts(): upload competer at time = %tT\n",new Date());
             currentPosition = currentPosition + read;
         }
         String checksum = TreeHashGenerator.calculateTreeHash(binaryChecksums);
@@ -288,7 +289,7 @@ public class AmazonGlacierArchiveOperations {
     
         //System.err.println("*** AmazonGlacierArchiveOperations.CompleteMultiPartUpload(): compRequest = "+compRequest);
         CompleteMultipartUploadResult compResult = client.completeMultipartUpload(compRequest);
-    
+        System.out.printf("\n");
         return compResult.getLocation();
     }
     public static void abortMultipartUpload(AmazonGlacierClient client,String vaultName,String uploadId) throws Exception {
