@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 14:00:27 2015
- *  Last Modified : <210405.0852>
+ *  Last Modified : <210503.0833>
  *
  *  Description	
  *
@@ -55,10 +55,13 @@ public class VaultToGlacier extends BackupVault {
     private static File GlacierVaultDB_File;
     private static Pattern LabelPattern;
     private static SiteConfig configuration;
-    public VaultToGlacier() throws Exception {
+    private boolean timecheck_;
+    public VaultToGlacier(boolean timecheck) throws Exception {
         super(GlacierVaultDB_File);
+        timecheck_ = timecheck;
     }
     private boolean after8am() {
+        if (!timecheck_) return false;
         Calendar calendar = new GregorianCalendar();
         return (calendar.get(Calendar.HOUR_OF_DAY) >= 8);
     }
@@ -90,7 +93,7 @@ public class VaultToGlacier extends BackupVault {
         }
     }
     public void RsyncToTheGlacier() throws Exception {
-        for (int i=0; i <= 60; i++) {
+        for (int i=0; i <= 150; i++) {
             //System.err.printf("*** VaultToGlacier.RsyncToTheGlacier(): i = %d\n",i);
             if (after8am()) {break;}
             Formatter f = new Formatter();
@@ -176,7 +179,9 @@ public class VaultToGlacier extends BackupVault {
         if (GlacierVaultDB_File == null) throw new Exception("No GlacierVaultDB_File");
         LabelPattern = Pattern.compile(configuration.LabelPattern());
         if (LabelPattern == null) throw new Exception("No LabelPattern");
-        VaultToGlacier V2G = new VaultToGlacier();
+        boolean timecheck = true;
+        if (args.length > 0 && args[0].compareTo("-notimecheck") == 0) timecheck = false;
+        VaultToGlacier V2G = new VaultToGlacier(timecheck);
         if (V2G == null) throw new Exception("No V2G");
         V2G.RsyncToTheGlacier();
     }
