@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <210401.1025>
+ *  Last Modified : <210627.0856>
  *
  *  Description	
  *
@@ -153,7 +153,7 @@ public class FlushOldVaults extends BackupVault {
             String tape = vault.getAttribute("name");
             //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): (deleting archives) tape = %s\n",tape);
             NodeList archives = vault.getElementsByTagName("archive");
-            boolean deletable = false;
+            boolean deletable = true;
             int j;
             for (j=0; j < archives.getLength(); j++) {
                 Element a = (Element) archives.item(j);
@@ -194,7 +194,7 @@ public class FlushOldVaults extends BackupVault {
                 if (dtag.getLength() < 1) {continue;}
                 Element descrele = (Element) dtag.item(0);
                 String descr = descrele.getTextContent();
-                //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s'\n",descr);
+                System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s'\n",descr);
                 try {
                     //System.out.println("Archive "+vault.getAttribute("name")+"/"+descr+" would have been deleted from the Glacier");
                     //deletetape = false;
