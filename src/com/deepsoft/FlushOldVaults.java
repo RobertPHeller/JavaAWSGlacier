@@ -108,7 +108,13 @@ public class FlushOldVaults extends BackupVault {
     }
     public void flushvaultsbefore(Date stamp,String disks[]) throws Exception {
         Element vaultsnode = getvaultnode();
-        File tapelist = new File(new File(CONFIGDIR,configuration.AMCONFIG()),amgetconf("tapelist"));
+        String tapelistfile = amgetconf("tapelist");
+        File tapelist;
+        if (tapelistfile.charAt(0) != '/') {
+            tapelist = new File(new File(CONFIGDIR,configuration.AMCONFIG()),tapelistfile);
+        } else {
+            tapelist = new File(tapelistfile);
+        }
         NodeList vaults = vaultsnode.getElementsByTagName("vault");
         int i;
         for (i=0; i < vaults.getLength(); i++) {
