@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <211202.1241>
+ *  Last Modified : <220110.1458>
  *
  *  Description	
  *
@@ -142,7 +142,7 @@ public class FlushOldVaults extends BackupVault {
             //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): delvault = %s\n",(delvault?"true":"false"));
             if (delvault) {
                 try {
-                    System.out.println("Vault "+tape+" would have been deleted from the Glacier");
+                    //System.out.println("Vault "+tape+" would have been deleted from the Glacier");
                     deletevault(tape);
                     System.out.println("Vault "+tape+" deleted from the Glacier");
                 } catch (Exception e) {
@@ -216,22 +216,23 @@ public class FlushOldVaults extends BackupVault {
         GlacierVaultDB_File = new File(configuration.GlacierVaultDB_FileName());
         FlushOldVaults FOV = new FlushOldVaults();
         Calendar today = new GregorianCalendar();
-        int thismonth = today.get(Calendar.MONTH);
+        int thismonth = today.get(Calendar.MONTH)+1;
         //System.err.printf("*** FlushOldVaults.main(): thismonth = %d\n",thismonth);
         int year      = today.get(Calendar.YEAR);
         //System.err.printf("*** FlushOldVaults.main(): year = %d\n",year);
-        int ninetydays = 90*24*60*60;
+        int sixtydays = 60*24*60*60;
         SimpleDateFormat simpleDate = new SimpleDateFormat("MM/dd/yyyy");
         Formatter f = new Formatter();
         f.format("%02d/01/%04d",thismonth,year);
         //System.err.printf("*** FlushOldVaults.main(): f is %s\n",f.toString());
-        long currentMonth = simpleDate.parse(f.toString()).getTime();
+        long currentMonth = simpleDate.parse(f.toString()).getTime()/1000;
         f.close();
         //System.err.printf("*** FlushOldVaults.main(): currentMonth = %d\n",currentMonth);
-        long qbegin1 = currentMonth - ninetydays;
+        long qbegin1 = currentMonth - sixtydays;
         Calendar qbeginCal = new GregorianCalendar();
-        qbeginCal.setTime(new Date(qbegin1));
-        int qbeginMonth = qbeginCal.get(Calendar.MONTH);
+        qbeginCal.setTime(new Date(qbegin1*1000));
+        //System.err.printf("*** FlushOldVaults.main(): qbeginCal = %s\n",qbeginCal.toString());
+        int qbeginMonth = qbeginCal.get(Calendar.MONTH)+1;
         //System.err.printf("*** FlushOldVaults.main(): qbeginMonth = %d\n",qbeginMonth);
         int qbeginYear  = qbeginCal.get(Calendar.YEAR);
         //System.err.printf("*** FlushOldVaults.main(): qbeginYear = %d\n",qbeginYear);
