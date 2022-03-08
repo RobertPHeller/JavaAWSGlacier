@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <220110.1458>
+ *  Last Modified : <220308.1825>
  *
  *  Description	
  *
@@ -53,6 +53,8 @@ import com.deepsoft.*;
 
 public class FlushOldVaults extends BackupVault {
     private static final String AMRMTAPE = "/usr/sbin/amrmtape";
+    private static final String AMTAPE = "/usr/sbin/amtape";
+    private static final String AMTAPEOPT = "-otpchanger=vault_changer";
     private static final String AMADMIN = "/usr/sbin/amadmin";
     private static final String AMGETCONF = "/usr/sbin/amgetconf";
     private static final String CONFIGDIR = "/etc/amanda";
@@ -106,6 +108,37 @@ public class FlushOldVaults extends BackupVault {
         if (status != 0) throw new Exception(AMRMTAPE+" -q "+configuration.AMCONFIG()+" "+tape+": failed");
         return;
     }
+    private String amtape(String tape) throws Exception {
+        String cmd[] = new String[5];
+        cmd[0] = AMTAPE;
+        cmd[1] = AMTAPEOPT;
+        cmd[2] = configuration.AMCONFIG();
+        cmd[3] = "label";
+        cmd[4] = tape;
+        //System.err.printf("*** FlushOldVaults.amtape(): tape is '%s'\n",tape);
+        Process p = Runtime.getRuntime().exec(cmd);
+        InputStream err = p.getErrorStream();
+        if (err != null) err.readAllBytes();
+        if (!p.waitFor(60L, java.util.concurrent.TimeUnit.SECONDS)) {
+            //System.err.printf("*** FlushOldVaults.amtape(): process timeout\n");
+            String kill[] = new String[2];
+            kill[0] = "/bin/kill";
+            Long j = new Long(p.pid());
+            kill[1] = j.toString();
+            Process killproc = Runtime.getRuntime().exec(kill);
+            killproc.waitFor();
+        }
+        int status = p.waitFor();
+        //System.err.printf("*** FlushOldVaults.amtape(): status = %d\n",status);
+        if (status != 0) throw new Exception(AMTAPE+" "+AMTAPEOPT+" "+configuration.AMCONFIG()+" "+tape+": failed");
+        String tpchanger = amgetconf("CHANGER:vault_changer:tpchanger");
+        int colon = tpchanger.indexOf(':');
+        if (colon < 0) {
+            return tpchanger+"/data/";
+        } else {
+            return tpchanger.substring(colon+1)+"/data/";
+        }
+    }
     public void flushvaultsbefore(Date stamp,String disks[]) throws Exception {
         Element vaultsnode = getvaultnode();
         String tapelistfile = amgetconf("tapelist");
@@ -142,7 +175,7 @@ public class FlushOldVaults extends BackupVault {
             //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): delvault = %s\n",(delvault?"true":"false"));
             if (delvault) {
                 try {
-                    //System.out.println("Vault "+tape+" would have been deleted from the Glacier");
+                    System.out.println("Vault "+tape+" would have been deleted from the Glacier");
                     deletevault(tape);
                     System.out.println("Vault "+tape+" deleted from the Glacier");
                 } catch (Exception e) {
@@ -162,6 +195,14 @@ public class FlushOldVaults extends BackupVault {
             int archivecount = archives.getLength();
             int deletedarchives = 0;
             int j = archives.getLength();
+            String tapedir;
+            try {
+                tapedir = amtape(tape);
+            } catch (Exception e) {
+                System.err.printf("Failed to load tape %s, skipped\n",tape);
+                continue;
+            }
+            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): tapedir is '%s'\n",tapedir);
             while (j > 0) {
                 j--;
                 //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): j = %d, archives.getLength() = %d\n",j,archives.getLength());
@@ -172,12 +213,14 @@ public class FlushOldVaults extends BackupVault {
                     String descr = descrele.getTextContent();
                     //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s'\n",descr);
                     if (!descr.matches("^.*\\.\\d$")) continue;
-                    Date adate = parseVDBDate(a.getAttribute("date"));
+                    String filename = tapedir+descr;
+                    File temp = new File(filename);
+                    if (temp.exists()) continue;
+                    //Date adate = parseVDBDate(a.getAttribute("date"));
                     //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = %s: adate is %s\n",descr,adate.toString());
-                    
-                    if (adate.after(stamp)) {
-                        continue;
-                    }
+                    //if (adate.after(stamp)) {
+                    //    continue;
+                    //}
                     for (int k = 0; k < disks.length; k++) {
                         //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): descr = '%s', disks[%d] = '%s'\n",descr,k,disks[k]);
                         if (descr.matches("^.*\\."+disks[k]+"\\.0$")) {
