@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <220308.1825>
+ *  Last Modified : <220310.1415>
  *
  *  Description	
  *
@@ -54,7 +54,8 @@ import com.deepsoft.*;
 public class FlushOldVaults extends BackupVault {
     private static final String AMRMTAPE = "/usr/sbin/amrmtape";
     private static final String AMTAPE = "/usr/sbin/amtape";
-    private static final String AMTAPEOPT = "-otpchanger=vault_changer";
+    private static final String AMTAPEOPT1 = "-otpchanger=vault_changer";
+    private static final String AMTAPEOPT2 = "-ointeractivity=";
     private static final String AMADMIN = "/usr/sbin/amadmin";
     private static final String AMGETCONF = "/usr/sbin/amgetconf";
     private static final String CONFIGDIR = "/etc/amanda";
@@ -109,16 +110,25 @@ public class FlushOldVaults extends BackupVault {
         return;
     }
     private String amtape(String tape) throws Exception {
-        String cmd[] = new String[5];
+        String cmd[] = new String[6];
         cmd[0] = AMTAPE;
-        cmd[1] = AMTAPEOPT;
-        cmd[2] = configuration.AMCONFIG();
-        cmd[3] = "label";
-        cmd[4] = tape;
+        cmd[1] = AMTAPEOPT1;
+        cmd[2] = AMTAPEOPT2;
+        cmd[3] = configuration.AMCONFIG();
+        cmd[4] = "label";
+        cmd[5] = tape;
         //System.err.printf("*** FlushOldVaults.amtape(): tape is '%s'\n",tape);
         Process p = Runtime.getRuntime().exec(cmd);
         InputStream err = p.getErrorStream();
-        if (err != null) err.readAllBytes();
+        if (err != null) {
+            err.readAllBytes();
+            err.close();
+        }
+        InputStream is = p.getInputStream();
+        if (is != null) {
+            is.readAllBytes();
+            is.close();
+        }
         if (!p.waitFor(60L, java.util.concurrent.TimeUnit.SECONDS)) {
             //System.err.printf("*** FlushOldVaults.amtape(): process timeout\n");
             String kill[] = new String[2];
@@ -130,7 +140,7 @@ public class FlushOldVaults extends BackupVault {
         }
         int status = p.waitFor();
         //System.err.printf("*** FlushOldVaults.amtape(): status = %d\n",status);
-        if (status != 0) throw new Exception(AMTAPE+" "+AMTAPEOPT+" "+configuration.AMCONFIG()+" "+tape+": failed");
+        if (status != 0) throw new Exception(AMTAPE+" "+AMTAPEOPT1+" "+AMTAPEOPT2+" "+configuration.AMCONFIG()+" label "+tape+": failed");
         String tpchanger = amgetconf("CHANGER:vault_changer:tpchanger");
         int colon = tpchanger.indexOf(':');
         if (colon < 0) {
@@ -150,45 +160,45 @@ public class FlushOldVaults extends BackupVault {
         }
         NodeList vaults = vaultsnode.getElementsByTagName("vault");
         int i;
-        for (i=0; i < vaults.getLength(); i++) {
-            Element vault = (Element) vaults.item(i);
-            String tape = vault.getAttribute("name");
-            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): (deleting valuts) tape = %s\n",tape);
-            InputStream tapelistIS = new FileInputStream(tapelist);
-            InputStreamReader tapelistISR = new InputStreamReader(tapelistIS);
-            BufferedReader tapelistfp = new BufferedReader(tapelistISR);
-            boolean delvault = true;
-            String line = null;
-            String p = "^\\d+\\s+"+tape+"\\s+.*";
-            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): p = '%s'\n",p);
-            Pattern tapePattern = Pattern.compile(p);
-            while ((line = tapelistfp.readLine()) != null) {
-                //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): line = '%s'\n",line);
-                Matcher match = tapePattern.matcher(line);
-                if (match.matches()) {
-                    //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): match matches '%s'\n",match.group(0));
-                    delvault = false;
-                    break;
-                }
-            }
-            tapelistIS.close();
-            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): delvault = %s\n",(delvault?"true":"false"));
-            if (delvault) {
-                try {
-                    System.out.println("Vault "+tape+" would have been deleted from the Glacier");
-                    deletevault(tape);
-                    System.out.println("Vault "+tape+" deleted from the Glacier");
-                } catch (Exception e) {
-                    System.err.println("Exception deleting vault: "+e.getMessage());
-                }
-            }
-        }
-        savedb(GlacierVaultDB_File);
+        //for (i=0; i < vaults.getLength(); i++) {
+        //    Element vault = (Element) vaults.item(i);
+        //    String tape = vault.getAttribute("name");
+        //    //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): (deleting valuts) tape = %s\n",tape);
+        //    InputStream tapelistIS = new FileInputStream(tapelist);
+        //    InputStreamReader tapelistISR = new InputStreamReader(tapelistIS);
+        //    BufferedReader tapelistfp = new BufferedReader(tapelistISR);
+        //    boolean delvault = true;
+        //    String line = null;
+        //    String p = "^\\d+\\s+"+tape+"\\s+.*";
+        //    //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): p = '%s'\n",p);
+        //    Pattern tapePattern = Pattern.compile(p);
+        //    while ((line = tapelistfp.readLine()) != null) {
+        //        //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): line = '%s'\n",line);
+        //        Matcher match = tapePattern.matcher(line);
+        //        if (match.matches()) {
+        //            //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): match matches '%s'\n",match.group(0));
+        //            delvault = false;
+        //            break;
+        //        }
+        //    }
+        //    tapelistIS.close();
+        //    //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): delvault = %s\n",(delvault?"true":"false"));
+        //    if (delvault) {
+        //        try {
+        //            System.out.println("Vault "+tape+" would have been deleted from the Glacier");
+        //            deletevault(tape);
+        //            System.out.println("Vault "+tape+" deleted from the Glacier");
+        //        } catch (Exception e) {
+        //            System.err.println("Exception deleting vault: "+e.getMessage());
+        //        }
+        //    }
+        //}
+        //savedb(GlacierVaultDB_File);
         for (i=0; i < vaults.getLength(); i++) {
             Element vault = (Element) vaults.item(i);
             Date vdate = parseVDBDate(vault.getAttribute("date"));
             //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): vault is %s: vdate is %s, stamp is %s\n",vault.getAttribute("name"),vdate.toString(),stamp.toString());
-            if (vdate.after(stamp)) {continue;}
+            //if (vdate.after(stamp)) {continue;}
             String tape = vault.getAttribute("name");
             //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): (deleting archives) tape = %s\n",tape);
             NodeList archives = vault.getElementsByTagName("archive");
@@ -199,7 +209,8 @@ public class FlushOldVaults extends BackupVault {
             try {
                 tapedir = amtape(tape);
             } catch (Exception e) {
-                System.err.printf("Failed to load tape %s, skipped\n",tape);
+                System.err.printf("Failed to load tape %s (%s), skipped\n",
+                          tape,e.getMessage());
                 continue;
             }
             //System.err.printf("*** FlushOldVaults.flushvaultsbefore(): tapedir is '%s'\n",tapedir);

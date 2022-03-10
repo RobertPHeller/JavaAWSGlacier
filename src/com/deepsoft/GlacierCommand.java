@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Tue May 26 15:38:55 2015
- *  Last Modified : <210405.1648>
+ *  Last Modified : <220310.1555>
  *
  *  Description	
  *
@@ -124,6 +124,17 @@ public class GlacierCommand extends BackupVault {
             }
         } else if (verb.matches("^abort.*")) {
             abortmulti(copyTail(command,1));
+        } else if (verb.matches("^cre.*")) {
+            if (command.length < 2) {
+                throw new Exception("Missing second command word for "+verb);
+            }
+            String verb2 = command[1];
+            verb2.toLowerCase();
+            if (verb2.matches("^va.*")) {
+                createvault(copyTail(command,2));
+            } else {
+                throw new Exception("I don't know how to create "+verb2);
+            }
         } else if (verb.compareTo("get") == 0) {
             if (command.length < 2) {
                 throw new Exception("Missing second command word for "+verb);
@@ -628,7 +639,7 @@ public class GlacierCommand extends BackupVault {
         Element vnode = findvaultbyname(vault);
         if (vnode == null) {
             DescribeVaultResult describeVaultResult = describevault(vault);
-            System.err.printf("*** GlacierCommand.syncinventory() adding vault: %s\n",vault);
+            //System.err.printf("*** GlacierCommand.syncinventory() adding vault: %s\n",vault);
             vnode = addvault(vlocation,describeVaultResult.getCreationDate());
             modified = true;
         }    
@@ -643,7 +654,7 @@ public class GlacierCommand extends BackupVault {
             Element anode = findarchivebyaid(vnode,ArchiveId);
             if (anode == null) {
                 String aloc = vlocation+"/archives/"+ArchiveId;
-                System.err.printf("*** GlacierCommand.syncinventory() adding archive: %s\n",aloc);
+                //System.err.printf("*** GlacierCommand.syncinventory() adding archive: %s\n",aloc);
                 anode = addarchive(aloc,CreationDate,new Long(Size).toString(),SHA256TreeHash,ArchiveDescription);
                 modified = true;
             }
@@ -659,14 +670,14 @@ public class GlacierCommand extends BackupVault {
                 String aid = a.getAttribute("archiveid");
                 for (ia = 0; ia < ArchiveList.length(); ia++) {
                     String ArchiveId = ArchiveList.getJSONObject(ia).getString("ArchiveId");
-                    System.err.printf("*** GlacierCommand.syncinventory() comparing %s to %s\n",ArchiveId,aid);
+                    //System.err.printf("*** GlacierCommand.syncinventory() comparing %s to %s\n",ArchiveId,aid);
                     if (ArchiveId.compareTo(aid) == 0) {
                         remove = false;
                         break;
                     }
                 }
                 if (remove) {
-                    System.err.printf("*** GlacierCommand.syncinventory() removing archive: %s\n",aid);
+                    //System.err.printf("*** GlacierCommand.syncinventory() removing archive: %s\n",aid);
                     vnode.removeChild(a);
                     modified = true;
                     notdone = true;
@@ -822,6 +833,14 @@ public class GlacierCommand extends BackupVault {
             response = super.deletearchive(vault,archive);
         }
         if (response != null && response != "") savedb(GlacierVaultDB_File);
+    }
+    private void createvault(String args[]) throws Exception {
+        if (args.length < 1) {
+            throw new Exception("Missing vault name");
+        }
+        String vault = args[0];
+        Element e = super.CreateNewVault(vault);
+        if (e != null) savedb(GlacierVaultDB_File);
     }
     private static SiteConfig configuration;
     public static void main(String args[]) throws Exception {

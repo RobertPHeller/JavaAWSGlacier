@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sat May 23 14:21:22 2015
- *  Last Modified : <160209.1329>
+ *  Last Modified : <220310.1553>
  *
  *  Description	
  *
@@ -44,6 +44,7 @@
 package com.deepsoft;
 
 import java.lang.*;
+import java.lang.reflect.Array;
 import java.io.*;
 import java.util.*;
 import java.text.SimpleDateFormat;
@@ -217,10 +218,11 @@ class BackupVault extends VaultXMLDB {
     }
     public String getJobBody(String vault,String jobid) throws Exception {
         GetJobOutputResult result = AmazonGlacierJobOperations.getJobOutput(client,vault,jobid,null);
+        //System.err.printf("*** BackupVault.getJobBody(): result is %s\n",result.toString());
         java.io.InputStream bodyStream = result.getBody();
-        int bodysize = bodyStream.available();
-        byte buffer[] = new byte[bodysize];
-        bodyStream.read(buffer);
+        byte[] buffer = bodyStream.readAllBytes();
+        int bytesread = Array.getLength(buffer);
+        //System.err.printf("*** BackupVault.getJobBody(): bytesread = %d\n",bytesread);
         return new String(buffer);
     }
     public String RetrieveArchive(String vault, String archiveid, String jobid, String filename, long size, String range, String treehash, String wholetreehash) throws Exception {
