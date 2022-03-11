@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun May 24 15:30:12 2015
- *  Last Modified : <220310.1415>
+ *  Last Modified : <220311.1036>
  *
  *  Description	
  *
@@ -54,8 +54,7 @@ import com.deepsoft.*;
 public class FlushOldVaults extends BackupVault {
     private static final String AMRMTAPE = "/usr/sbin/amrmtape";
     private static final String AMTAPE = "/usr/sbin/amtape";
-    private static final String AMTAPEOPT1 = "-otpchanger=vault_changer";
-    private static final String AMTAPEOPT2 = "-ointeractivity=";
+    private static final String AMTAPEOPT = "-otpchanger=vault_changer";
     private static final String AMADMIN = "/usr/sbin/amadmin";
     private static final String AMGETCONF = "/usr/sbin/amgetconf";
     private static final String CONFIGDIR = "/etc/amanda";
@@ -110,37 +109,31 @@ public class FlushOldVaults extends BackupVault {
         return;
     }
     private String amtape(String tape) throws Exception {
-        String cmd[] = new String[6];
+        String cmd[] = new String[5];
         cmd[0] = AMTAPE;
-        cmd[1] = AMTAPEOPT1;
-        cmd[2] = AMTAPEOPT2;
-        cmd[3] = configuration.AMCONFIG();
-        cmd[4] = "label";
-        cmd[5] = tape;
+        cmd[1] = AMTAPEOPT;
+        cmd[2] = configuration.AMCONFIG();
+        cmd[3] = "label";
+        cmd[4] = tape;
         //System.err.printf("*** FlushOldVaults.amtape(): tape is '%s'\n",tape);
         Process p = Runtime.getRuntime().exec(cmd);
+        long start = System.currentTimeMillis();
+        InputStream out = p.getInputStream();
         InputStream err = p.getErrorStream();
-        if (err != null) {
-            err.readAllBytes();
-            err.close();
-        }
-        InputStream is = p.getInputStream();
-        if (is != null) {
-            is.readAllBytes();
-            is.close();
-        }
-        if (!p.waitFor(60L, java.util.concurrent.TimeUnit.SECONDS)) {
-            //System.err.printf("*** FlushOldVaults.amtape(): process timeout\n");
-            String kill[] = new String[2];
-            kill[0] = "/bin/kill";
-            Long j = new Long(p.pid());
-            kill[1] = j.toString();
-            Process killproc = Runtime.getRuntime().exec(kill);
-            killproc.waitFor();
+        while (p.isAlive() && System.currentTimeMillis() - start < 60 * 1000) {
+            if(out != null) {
+                int avail = out.available();
+                out.skip(avail); // or a read if you want the data
+            }
+            if(err != null) {
+                int avail = err.available();
+                err.skip(avail); // or a read if you want the data
+            }
+            Thread.sleep(1);
         }
         int status = p.waitFor();
         //System.err.printf("*** FlushOldVaults.amtape(): status = %d\n",status);
-        if (status != 0) throw new Exception(AMTAPE+" "+AMTAPEOPT1+" "+AMTAPEOPT2+" "+configuration.AMCONFIG()+" label "+tape+": failed");
+        if (status != 0) throw new Exception(AMTAPE+" "+AMTAPEOPT+" "+configuration.AMCONFIG()+" label "+tape+": failed");
         String tpchanger = amgetconf("CHANGER:vault_changer:tpchanger");
         int colon = tpchanger.indexOf(':');
         if (colon < 0) {
