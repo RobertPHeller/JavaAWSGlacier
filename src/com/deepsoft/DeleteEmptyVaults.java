@@ -8,7 +8,7 @@
  *  Author        : $Author$
  *  Created By    : Robert Heller
  *  Created       : Sun Nov 26 12:19:44 2023
- *  Last Modified : <231126.1242>
+ *  Last Modified : <231126.1321>
  *
  *  Description	
  *
@@ -61,6 +61,7 @@ public class DeleteEmptyVaults extends BackupVault {
         Element vaultsnode = getvaultnode();
         NodeList vaults = vaultsnode.getElementsByTagName("vault");
         int i;
+        int count = 0;
         for (i=0; i < vaults.getLength(); i++) {
             Element vault = (Element) vaults.item(i);
             NodeList archives = vault.getElementsByTagName("archive");
@@ -70,12 +71,23 @@ public class DeleteEmptyVaults extends BackupVault {
                 try {
                     deletevault(tape);
                     System.out.println("Vault "+tape+" deleted from the Glacier");
+                    count++;
                 } catch (Exception e) {
                     System.err.println("Exception deleting vault: "+e.getMessage());
                 }
             }
         }
-        savedb(GlacierVaultDB_File);
+        if (count > 0) {
+            String countString = Integer.toString(count,10);
+            if (count == 1) {
+                System.out.println(countString+" vault deleted from the Glacier");
+            } else {
+                System.out.println(countString+" vaults deleted from the Glacier");
+            }
+            savedb(GlacierVaultDB_File);
+        } else {
+            System.out.println("No vaults deleted from the Glacier");
+        }
     }
     public static void main(String args[]) throws Exception {
         configuration = new SiteConfig();
